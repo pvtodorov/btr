@@ -1,0 +1,7 @@
+{
+    "infile": "~/Data/AMP-AD/MSBB/msbb-wrangled.tsv",
+    "outfolder": "Braak_BM36_background",
+    "meta_cols": ["ID", "CDR", "Braak", "BrodmannArea", "Barcode"],
+    "target": "Braak",
+    "subset": "BM36"
+}
