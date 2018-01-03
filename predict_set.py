@@ -125,7 +125,7 @@ if __name__ == '__main__':
     bcg_cols = [int(x) for x in background.columns.tolist()]
     
     scores = []
-    for g in gmt:
+    for g in tqdm(gmt):
         gene_list = g[2:]
         intersect, missing = get_gene_list_intersect(gene_list, data_cols)
         X, y = get_X_y(df, target, intersect)
