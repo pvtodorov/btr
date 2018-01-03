@@ -151,9 +151,10 @@ if __name__ == '__main__':
         p_values = df_scores['p_value'].tolist()
         mt = multipletests(p_values, alpha=0.05, method='fdr_bh')
         df_scores['adjusted_p'] = mt[1]
-        df_scores = df_scores.sort_values(by=['adjusted_p'])
+        df_scores = df_scores.sort_values(by=['adjusted_p', 'R2'],
+                                          ascending=[True, False])
 
-
-    df_scores.to_csv('scores.csv', index=False)
+    gmt_suffix = gmt_path.split('/')[-1][:-4]
+    df_scores.to_csv('scores_' + gmt_suffix + '.csv', index=False)
 
 
