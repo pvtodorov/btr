@@ -128,6 +128,9 @@ if __name__ == '__main__':
     for g in tqdm(gmt):
         gene_list = g[2:]
         intersect, missing = get_gene_list_intersect(gene_list, data_cols)
+        if len(intersect) < 1:
+            print('No intersecting genes!')
+            continue
         X, y = get_X_y(df, target, intersect)
         rf = fit_RF(X, y)
         s = {}
