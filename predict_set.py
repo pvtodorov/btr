@@ -28,7 +28,6 @@ def get_gene_list_intersect(gene_list, data_cols):
     """
     intersect = [x for x in gene_list if x in data_cols]
     missing = [x for x in gene_list if x not in data_cols]
-    if len(missing) > 0:
     return intersect, missing
 
 
