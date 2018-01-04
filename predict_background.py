@@ -53,7 +53,7 @@ def gen_background_performance(df, target, data_cols,
     as a dict of {n_features: R2, ...}
     """
     oob_scores = {}
-    for k in tqdm(range(10, max_cols, interval)):
+    for k in tqdm(range(10, max_cols+interval, interval)):
         selected_cols = sample_data_cols(data_cols, k)
         X, y = get_X_y(df, target, selected_cols)
         rf = fit_RF(X, y)
