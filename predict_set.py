@@ -132,8 +132,9 @@ if __name__ == '__main__':
         s['id'] = g[0]
         s['description'] = g[1]
         s['R2'] = rf.oob_score_
-        n_genes = len(intersect)
-        b_idx = (np.abs(np.array(bcg_cols) - n_genes)).argmin()
+        s['n_genes'] = len(gene_list)
+        s['intersect'] = len(intersect)
+        b_idx = (np.abs(np.array(bcg_cols) - len(intersect))).argmin()
         b_col = str(bcg_cols[b_idx])
         bcg_vals = background[b_col].tolist()
         bcg_vals_t = [x for x in bcg_vals if x > s['R2']]
