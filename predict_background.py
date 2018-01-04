@@ -46,7 +46,7 @@ def fit_RF(X, y):
 
 def gen_background_performance(df, target, data_cols,
                                interval=10,
-                               max_cols=500):
+                               max_cols=1000):
     """ Given a dataframe, a target variable, data columns, a max number of
     columns to fit, and an interval to increase the sample of columns. Fits
     the data over the intervals and returns the oob R2 scores for each fit
