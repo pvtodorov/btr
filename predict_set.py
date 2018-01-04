@@ -29,8 +29,6 @@ def get_gene_list_intersect(gene_list, data_cols):
     intersect = [x for x in gene_list if x in data_cols]
     missing = [x for x in gene_list if x not in data_cols]
     if len(missing) > 0:
-        print('Missing ' + str(len(missing)) + ' genes.')
-        print(str(missing))
     return intersect, missing
 
 
@@ -116,7 +114,6 @@ if __name__ == '__main__':
     # drop duplicate IDs, taking only the first time the ID occurs
     df = df.drop_duplicates(subset='ID', keep='first')
     data_cols = get_data_cols(df, settings['meta_cols'])
-    print(df.shape)
 
     gmt = read_gmt(gmt_path)
     gmt_dict = get_gmt_dict(gmt)
@@ -129,7 +126,6 @@ if __name__ == '__main__':
         gene_list = g[2:]
         intersect, missing = get_gene_list_intersect(gene_list, data_cols)
         if len(intersect) < 1:
-            print('No intersecting genes!')
             continue
         X, y = get_X_y(df, target, intersect)
         rf = fit_RF(X, y)
