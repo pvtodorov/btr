@@ -47,7 +47,7 @@ if __name__ == '__main__':
         if len(intersect) < 1:
             continue
         X, y = get_X_y(df, target, intersect)
-        rf = fit_RF(X, y)
+        rf = fit_RF(X, y, 'regression')
         s = {}
         s['id'] = g[0]
         s['description'] = g[1]

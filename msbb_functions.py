@@ -1,6 +1,6 @@
 import pandas as pd
 import random
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 import uuid
 from tqdm import tqdm
 import csv
@@ -33,13 +33,30 @@ def get_X_y(df, target, data_cols):
     return X, y
 
 
-def fit_RF(X, y):
-    """ Fit and return a randomForestRegressor object to the provided data """
-    rf = RandomForestRegressor(n_estimators=100,
-                               max_features='auto',
-                               n_jobs=4,
-                               oob_score=True)
+def fit_RF_regressor(X, y, rf_params):
+    """ Fit and return a RandomForestRegressor object to the provided data """
+    rf = RandomForestRegressor(**rf_params)
     rf.fit(X, y)
+    return rf
+
+
+def fit_RF_classifier(X, y, rf_params):
+    """ Fit and return a RandomForestClassifier object to the provided data """
+    rf = RandomForestClassifier(**rf_params)
+    rf.fit(X, y)
+    return rf
+
+
+def fit_RF(X, y, task_type, rf_params=None):
+    if rf_params is None:
+        rf_params = {"n_estimators": 100,
+                     "max_features": 'auto',
+                     "n_jobs": 4,
+                     "oob_score": True}
+    if task_type == 'classification':
+        rf = fit_RF_classifier(X, y, rf_params)
+    elif task_type == 'regression':
+        rf = fit_RF_regressor(X, y, rf_params)
     return rf
 
 
