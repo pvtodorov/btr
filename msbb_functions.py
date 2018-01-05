@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 import uuid
 from tqdm import tqdm
 import csv
+import os
 
 
 def get_data_cols(df, meta_cols):
@@ -90,26 +91,29 @@ def standardize_gmt(gmt):
     return gmt_standard
 
 
-def read_gmt(fpath):
+def read_gmt(path):
     """ given a filepath, reads the gmt or txt file at that location, returning
     a list that can be used in the scripts
     """
-    if '.gmt' == fpath[-4:]:
+    if os.path.isfile(path):
         gmt = []
-        with open(fpath) as f:
+        with open(path) as f:
             rd = csv.reader(f, delimiter="\t", quotechar='"')
             for row in rd:
                 gmt.append(row)
         gmt = standardize_gmt(gmt)
-        # gmt = gmt[:100]
-        # GET RID OF THIS
-        # LIMIT TO 100 LINES FOR TESTING ONLY!!!!
-        return gmt
-    elif '.txt' == fpath[-4:]:
-        with open(fpath) as fd:
-            rd = csv.reader(fd, delimiter="\t", quotechar='"')
-            gene_list = []
-            for row in rd:
-                gene_list.append(row[0])
-            gmt = [[fpath.split('/')[-1]] + ['user defined'] + gene_list]
-        return gmt
+        gmt_suffix = path.split('/')[-1][:-4]
+        return gmt, gmt_suffix
+    else:
+        files = os.listdir(path)
+        gmt = []
+        gmt_suffix = path.split('/')[-2]
+        for f in files:
+            print(f)
+            with open(path + f) as fd:
+                rd = csv.reader(fd, delimiter="\t", quotechar='"')
+                gene_list = []
+                for row in rd:
+                    gene_list.append(row[0])
+                gmt.append([f, 'user defined'] + gene_list)
+        return gmt, gmt_suffix

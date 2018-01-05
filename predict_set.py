@@ -36,7 +36,7 @@ if __name__ == '__main__':
     df = df.drop_duplicates(subset='ID', keep='first')
     data_cols = get_data_cols(df, settings['meta_cols'])
 
-    gmt = read_gmt(gmt_path)
+    gmt, gmt_suffix = read_gmt(gmt_path)
     background = pd.read_csv(settings['outfolder'] + '.csv')
     bcg_cols = [int(x) for x in background.columns.tolist()]
 
@@ -63,14 +63,13 @@ if __name__ == '__main__':
 
     df_scores = pd.DataFrame(scores)
 
-    if len(df_scores) > 1:
-        p_values = df_scores['p_value'].tolist()
-        mt = multipletests(p_values, alpha=0.05, method='fdr_bh')
-        df_scores['adjusted_p'] = mt[1]
-        df_scores = df_scores.sort_values(by=['adjusted_p', 'R2'],
-                                          ascending=[True, False])
+    
+    p_values = df_scores['p_value'].tolist()
+    mt = multipletests(p_values, alpha=0.05, method='fdr_bh')
+    df_scores['adjusted_p'] = mt[1]
+    df_scores = df_scores.sort_values(by=['adjusted_p', 'R2'],
+                                        ascending=[True, False])
 
-    gmt_suffix = gmt_path.split('/')[-1][:-4]
     df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
                            'R2', 'p_value', 'adjusted_p']]
     df_scores.to_csv('scores_' + gmt_suffix + '.csv', index=False)
