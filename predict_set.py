@@ -81,11 +81,6 @@ def read_gmt(fpath):
         return gmt
 
 
-def get_gmt_dict(gmt):
-    d = {x[0]: {'meta': x[1], 'genes': x[2:]} for x in gmt}
-    return d
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("settings_path", help="settings and parameters json")
@@ -115,8 +110,6 @@ if __name__ == '__main__':
     data_cols = get_data_cols(df, settings['meta_cols'])
 
     gmt = read_gmt(gmt_path)
-    gmt_dict = get_gmt_dict(gmt)
-
     background = pd.read_csv(settings['outfolder'] + '.csv')
     bcg_cols = [int(x) for x in background.columns.tolist()]
     
