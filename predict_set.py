@@ -144,6 +144,8 @@ if __name__ == '__main__':
                                           ascending=[True, False])
 
     gmt_suffix = gmt_path.split('/')[-1][:-4]
+    df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
+                           'R2', 'p_value', 'adjusted_p']]
     df_scores.to_csv('scores_' + gmt_suffix + '.csv', index=False)
 
 
