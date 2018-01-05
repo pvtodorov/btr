@@ -1,84 +1,11 @@
-import csv
 import argparse
 import numpy as np
 import pandas as pd
-import random
-from sklearn.ensemble import RandomForestRegressor
-import uuid
 from tqdm import tqdm
-import argparse
 import json
 import os
 from statsmodels.sandbox.stats.multicomp import multipletests
-
-
-def get_data_cols(df, meta_cols):
-    """ Given a dataframe and its meta columns, get back a list of the data
-    columns from the dataframe.
-    """
-    cols = df.columns.tolist()
-    data_cols = [x for x in cols if x not in meta_cols]
-    return data_cols
-
-
-def get_gene_list_intersect(gene_list, data_cols):
-    """ return the intersection between the current gene list HGNC symbols and
-    the columns in the dataset. return a second list, `missing` for any genes
-    that are missing.
-    """
-    intersect = [x for x in gene_list if x in data_cols]
-    missing = [x for x in gene_list if x not in data_cols]
-    return intersect, missing
-
-
-def get_X_y(df, target, data_cols):
-    """ Given a dataframe, a target col, and a sample of data column names,
-    generate X, an numpy array of the data, and y, a list of target values
-    corresponding to each row.
-    """
-    X = df.as_matrix(columns=data_cols)
-    y = df[target].tolist()
-    return X, y
-
-
-def fit_RF(X, y):
-    """ Fit and return a randomForestRegressor object to the provided data """
-    rf = RandomForestRegressor(n_estimators=100,
-                               max_features='auto',
-                               n_jobs=4,
-                               oob_score=True)
-    rf.fit(X, y)
-    return rf
-
-
-def standardize_gmt(gmt):
-    if 'http' in gmt[0][1]:
-        gmt_standard = [[x[1]]+[x[0]]+x[2:] for x in gmt]
-    else:
-        gmt_standard = gmt
-    return gmt_standard
-
-
-def read_gmt(fpath):
-    if '.gmt' == fpath[-4:]:
-        gmt = []
-        with open(fpath) as f:
-            rd = csv.reader(f, delimiter="\t", quotechar='"')
-            for row in rd:
-                gmt.append(row)
-        gmt = standardize_gmt(gmt)
-        # gmt = gmt[:100]
-        # GET RID OF THIS
-        # LIMIT TO 100 LINES FOR TESTING ONLY!!!!
-        return gmt
-    elif '.txt' == fpath[-4:]:
-        with open(fpath) as fd:
-            rd = csv.reader(fd, delimiter="\t", quotechar='"')
-            gene_list = []
-            for row in rd:
-                gene_list.append(row[0])
-            gmt = [[fpath.split('/')[-1]] + ['user defined'] + gene_list]
-        return gmt
+from msbb_functions import *
 
 
 if __name__ == '__main__':
@@ -112,7 +39,7 @@ if __name__ == '__main__':
     gmt = read_gmt(gmt_path)
     background = pd.read_csv(settings['outfolder'] + '.csv')
     bcg_cols = [int(x) for x in background.columns.tolist()]
-    
+
     scores = []
     for g in tqdm(gmt):
         gene_list = g[2:]
@@ -147,5 +74,3 @@ if __name__ == '__main__':
     df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
                            'R2', 'p_value', 'adjusted_p']]
     df_scores.to_csv('scores_' + gmt_suffix + '.csv', index=False)
-
-
