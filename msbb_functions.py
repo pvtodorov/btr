@@ -80,6 +80,9 @@ def get_gene_list_intersect(gene_list, data_cols):
 
 
 def standardize_gmt(gmt):
+    """ Takes a loaded list from a .gmt file and reformats it, if necessary,
+    so that the html id is always at index 0 and the description is at index 1
+    """
     if 'http' in gmt[0][1]:
         gmt_standard = [[x[1]] + [x[0]] + x[2:] for x in gmt]
     else:
@@ -88,6 +91,9 @@ def standardize_gmt(gmt):
 
 
 def read_gmt(fpath):
+    """ given a filepath, reads the gmt or txt file at that location, returning
+    a list that can be used in the scripts
+    """
     if '.gmt' == fpath[-4:]:
         gmt = []
         with open(fpath) as f:
