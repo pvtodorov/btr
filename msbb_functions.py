@@ -5,6 +5,28 @@ import uuid
 from tqdm import tqdm
 import csv
 import os
+from collections import defaultdict
+
+
+def recursivedict():
+    return defaultdict(recursivedict)
+
+
+def check_or_create_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def load_msbb_data(path):
+    df = pd.read_table(path)
+    df = df.dropna(axis=0, how='any')
+    return df
+
+
+def get_train_test_df(df, column, subset):
+    df_train = df[~df[column].isin([subset])]
+    df_test = df[df[column].isin([subset])]
+    return df_train, df_test
 
 
 def get_data_cols(df, meta_cols):
@@ -33,6 +55,15 @@ def get_X_y(df, target, data_cols):
     return X, y
 
 
+def binarize_Braak_scores(y):
+    """ Take Braak scores and binarize them such that:
+    [1, 2, 3] -> 0
+    [4, 5] -> 1
+    """
+    y_bin = [1 if x >= 4 else 0 for x in y]
+    return y_bin
+
+
 def fit_RF_regressor(X, y, rf_params):
     """ Fit and return a RandomForestRegressor object to the provided data """
     rf = RandomForestRegressor(**rf_params)
@@ -51,13 +82,48 @@ def fit_RF(X, y, task_type, rf_params=None):
     if rf_params is None:
         rf_params = {"n_estimators": 100,
                      "max_features": 'auto',
-                     "n_jobs": 4,
+                     "n_jobs": 1,
                      "oob_score": True}
     if task_type == 'classification':
         rf = fit_RF_classifier(X, y, rf_params)
     elif task_type == 'regression':
         rf = fit_RF_regressor(X, y, rf_params)
     return rf
+
+
+def predict_RF(rf, X):
+    predictions = rf.predict_proba(X)
+    predictions = [x[1] for x in predictions]
+    return predictions
+
+
+def gen_background_predictions(df, target, data_cols,
+                               subset_col, subsets,
+                               interval=10, max_cols=1000):
+    bcg_predictions = recursivedict()
+    for subset in subsets:
+        df_train, df_test = get_train_test_df(df, subset_col, subset)
+        for k in tqdm(range(10, max_cols + interval, interval)):
+            selected_cols = sample_data_cols(data_cols, k)
+            X_train, y_train = get_X_y(df_train, target, selected_cols)
+            y_train = binarize_Braak_scores(y_train)
+            X_test, y_test = get_X_y(df_test, target, selected_cols)
+            rf = fit_RF(X_train, y_train, 'classification')
+            predictions = predict_RF(rf, X_test)
+            sub_ids = df_test['ID'].tolist()
+            for id, p in zip(sub_ids, predictions):
+                bcg_predictions[subset][id][k] = p
+    return bcg_predictions
+
+
+def save_predictions(predictions, folder):
+    for subset in predictions:
+        df = pd.DataFrame(predictions[subset])
+        df = df.transpose().reset_index().rename(columns={'index': 'ID'})
+        outfile = str(uuid.uuid4())
+        outfolder = folder + '/' + subset
+        check_or_create_dir(outfolder)
+        df.to_csv(outfolder + '/' + outfile + '.csv', index=False)
 
 
 def gen_background_performance(df, target, data_cols,

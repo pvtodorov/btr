@@ -63,12 +63,11 @@ if __name__ == '__main__':
 
     df_scores = pd.DataFrame(scores)
 
-    
     p_values = df_scores['p_value'].tolist()
     mt = multipletests(p_values, alpha=0.05, method='fdr_bh')
     df_scores['adjusted_p'] = mt[1]
     df_scores = df_scores.sort_values(by=['adjusted_p', 'R2'],
-                                        ascending=[True, False])
+                                      ascending=[True, False])
 
     df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
                            'R2', 'p_value', 'adjusted_p']]
