@@ -6,6 +6,7 @@ from tqdm import tqdm
 import csv
 import os
 from collections import defaultdict
+import numpy as np
 
 
 def recursivedict():
@@ -110,6 +111,27 @@ def gen_background_predictions(df, target, data_cols,
             X_test, y_test = get_X_y(df_test, target, selected_cols)
             rf = fit_RF(X_train, y_train, 'classification')
             predictions = predict_RF(rf, X_test)
+            sub_ids = df_test['ID'].tolist()
+            for id, p in zip(sub_ids, predictions):
+                bcg_predictions[subset][id][k] = p
+    return bcg_predictions
+
+
+def gen_bcg_predictions(estimator, df, target, data_cols,
+                        subset_col, subsets,
+                        interval=10, max_cols=1000):
+    bcg_predictions = recursivedict()
+    for subset in subsets:
+        df_train, df_test = get_train_test_df(df, subset_col, subset)
+        for k in tqdm(range(10, max_cols + interval, interval)):
+            selected_cols = sample_data_cols(data_cols, k)
+            X_train, y_train = get_X_y(df_train, target, selected_cols)
+            y_train = [int(x) for x in y_train]
+            y_train = np.array(y_train)
+            X_test, y_test = get_X_y(df_test, target, selected_cols)
+            e = estimator()
+            e = e.fit(X_train, y_train)
+            predictions = e.predict(X_test)
             sub_ids = df_test['ID'].tolist()
             for id, p in zip(sub_ids, predictions):
                 bcg_predictions[subset][id][k] = p
