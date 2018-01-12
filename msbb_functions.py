@@ -7,6 +7,7 @@ import csv
 import os
 from collections import defaultdict
 import numpy as np
+from itertools import combinations
 
 
 def recursivedict():
@@ -222,3 +223,12 @@ def read_gmt(path):
                     gene_list.append(row[0])
                 gmt.append([f, 'user defined'] + gene_list)
         return gmt, gmt_suffix
+
+
+def build_pairs_list(data, filter_column, value, split):
+    data_f = data[data[filter_column] == value]
+    samples = [(x, y) for x, y in
+               zip(data_f['ID'].tolist(), data_f[split].tolist())]
+    samples = sorted(samples, key=lambda x: x[1])
+    pairs_list = [x for x in combinations(samples, 2)]
+    return pairs_list
