@@ -232,3 +232,37 @@ def build_pairs_list(data, filter_column, value, split):
     samples = sorted(samples, key=lambda x: x[1])
     pairs_list = [x for x in combinations(samples, 2)]
     return pairs_list
+
+
+def get_pairs(pairs_list, shuffle=True, seed=2):
+    sample_list = list(set([sample[0] for pair
+                            in pairs_list for sample in pair]))
+    used_ids = []
+    selected_pairs = []
+    if shuffle:
+        np.random.seed(seed)
+        np.random.shuffle(sample_list)
+    for sample in sample_list:
+        if sample in used_ids:
+            continue
+        print(sample)
+        pairs_list_f0 = [x for x in pairs_list]
+        pairs_list_f1 = [x for x in pairs_list_f0
+                         if sample in [x[0][0], x[1][0]]]
+        pairs_list_f2 = [x for x in pairs_list_f1 if x[0][1] != x[1][1]]
+        if shuffle:
+            np.random.seed(seed)
+            np.random.shuffle(pairs_list_f2)
+        pairs_list_f3 = [x for x in pairs_list_f2
+                         if ((x[0][0] not in used_ids) and
+                             (x[1][0] not in used_ids))]
+        if len(pairs_list_f3):
+            selected_pair = pairs_list_f3[0]
+        else:
+            print("don't apply final filter")
+            selected_pair = pairs_list_f2[0]
+        selected_ids = [sample[0] for sample in selected_pair]
+        used_ids += selected_ids
+        selected_pairs.append(selected_pair)
+        print(len(selected_pairs))
+    return selected_pairs
