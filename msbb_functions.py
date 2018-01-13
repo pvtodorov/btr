@@ -66,12 +66,22 @@ def get_X_y(df, target, data_cols):
 
 
 def binarize_Braak_scores(y):
-    """ Take Braak scores and binarize them such that:
-    [1, 2, 3] -> 0
-    [4, 5] -> 1
+    """ Take Braak scores and digitize them such that:
+    [0, 1, 2, 3] -> 0
+    [4, 5, 6]    -> 1
     """
-    y_bin = [1 if x >= 4 else 0 for x in y]
+    y_bin = list(np.digitize(y, [0, 4])) - 1
     return y_bin
+
+
+def digitize_Braak_scores(y):
+    """ Take Braak scores and digitize them such that:
+    [0, 1, 2] -> 0
+    [3, 4]    -> 1
+    [5, 6]    -> 2
+    """
+    y_digitized = list(np.digitize(y, [0, 3, 5])) - 1
+    return y_digitized
 
 
 def fit_RF_regressor(X, y, rf_params):
