@@ -264,7 +264,7 @@ def build_pairs_list(data, filter_column, value, split):
     return pairs_list
 
 
-def get_pairs(pairs_list, shuffle=True, seed=2):
+def get_pairs(pairs_list, shuffle=True, seed=2, sample_once=True):
     """ Added function to return a set of pairs that have each sample in data
     at least once """
     sample_list = list(set([sample[0] for pair
@@ -275,8 +275,9 @@ def get_pairs(pairs_list, shuffle=True, seed=2):
         np.random.seed(seed)
         np.random.shuffle(sample_list)
     for sample in sample_list:
-        if sample in used_ids:
-            continue
+        if sample_once:
+            if sample in used_ids:
+                continue
         print(sample)
         pairs_list_f0 = [x for x in pairs_list]
         pairs_list_f1 = [x for x in pairs_list_f0
@@ -285,14 +286,15 @@ def get_pairs(pairs_list, shuffle=True, seed=2):
         if shuffle:
             np.random.seed(seed)
             np.random.shuffle(pairs_list_f2)
-        pairs_list_f3 = [x for x in pairs_list_f2
+        pairs_list_f3 = [x for x in pairs_list_f2 if x not in selected_pairs]
+        pairs_list_f4 = [x for x in pairs_list_f3
                          if ((x[0][0] not in used_ids) and
                              (x[1][0] not in used_ids))]
-        if len(pairs_list_f3):
-            selected_pair = pairs_list_f3[0]
+        if len(pairs_list_f4):
+            selected_pair = pairs_list_f4[0]
         else:
             print("don't apply final filter")
-            selected_pair = pairs_list_f2[0]
+            selected_pair = pairs_list_f3[0]
         selected_ids = [sample[0] for sample in selected_pair]
         used_ids += selected_ids
         selected_pairs.append(selected_pair)
