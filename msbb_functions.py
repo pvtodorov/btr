@@ -34,8 +34,8 @@ def load_msbb_data(path):
 def get_train_test_df(df, column, subset):
     """ Split a dataframe into a train/test portion, given a column, and subset
     """
-    df_train = df[~df[column].isin([subset])]
-    df_test = df[df[column].isin([subset])]
+    df_train = df[~df[column].isin(subset)]
+    df_test = df[df[column].isin(subset)]
     return df_train, df_test
 
 
@@ -128,7 +128,7 @@ def gen_background_predictions(df, target, data_cols,
     """
     bcg_predictions = recursivedict()
     for subset in subsets:
-        df_train, df_test = get_train_test_df(df, subset_col, subset)
+        df_train, df_test = get_train_test_df(df, subset_col, [subset])
         for k in tqdm(range(10, max_cols + interval, interval)):
             selected_cols = sample_data_cols(data_cols, k)
             X_train, y_train = get_X_y(df_train, target, selected_cols)
@@ -138,7 +138,7 @@ def gen_background_predictions(df, target, data_cols,
             predictions = predict_RF(rf, X_test)
             sub_ids = df_test['ID'].tolist()
             for id, p in zip(sub_ids, predictions):
-                bcg_predictions[subset][id][k] = p
+                bcg_predictions[subset[0]][id][k] = p
     return bcg_predictions
 
 
@@ -150,7 +150,7 @@ def gen_bcg_predictions(estimator, df, target, data_cols,
     """
     bcg_predictions = recursivedict()
     for subset in subsets:
-        df_train, df_test = get_train_test_df(df, subset_col, subset)
+        df_train, df_test = get_train_test_df(df, subset_col, [subset])
         for k in tqdm(range(10, max_cols + interval, interval)):
             selected_cols = sample_data_cols(data_cols, k)
             X_train, y_train = get_X_y(df_train, target, selected_cols)
@@ -162,7 +162,7 @@ def gen_bcg_predictions(estimator, df, target, data_cols,
             predictions = e.predict(X_test)
             sub_ids = df_test['ID'].tolist()
             for id, p in zip(sub_ids, predictions):
-                bcg_predictions[subset][id][k] = p
+                bcg_predictions[subset[0]][id][k] = p
     return bcg_predictions
 
 
