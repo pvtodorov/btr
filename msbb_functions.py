@@ -80,7 +80,7 @@ def digitize_Braak_scores(y):
     [3, 4]    -> 1
     [5, 6]    -> 2
     """
-    y_digitized = list(np.digitize(y, [0, 3, 5])) - 1
+    y_digitized = np.digitize(y, [0, 3, 5]) - 1
     return y_digitized
 
 
@@ -169,7 +169,7 @@ def gen_background_performance(df, target, data_cols,
     for k in tqdm(range(10, max_cols + interval, interval)):
         selected_cols = sample_data_cols(data_cols, k)
         X, y = get_X_y(df, target, selected_cols)
-        rf = fit_RF(X, y)
+        rf = fit_RF(X, y, 'regression')
         oob_scores[k] = rf.oob_score_
     return oob_scores
 
@@ -243,7 +243,7 @@ def build_pairs_list(data, filter_column, value, split):
     return pairs_list
 
 
-def get_pairs(pairs_list, shuffle=True, seed=2, sample_once=True):
+def get_pairs(pairs_list, shuffle=True, seed=47, sample_once=False):
     """ Added function to return a set of pairs that have each sample in data
     at least once """
     sample_list = list(set([sample[0] for pair
@@ -257,7 +257,6 @@ def get_pairs(pairs_list, shuffle=True, seed=2, sample_once=True):
         if sample_once:
             if sample in used_ids:
                 continue
-        print(sample)
         pairs_list_f0 = [x for x in pairs_list]
         pairs_list_f1 = [x for x in pairs_list_f0
                          if sample in [x[0][0], x[1][0]]]
@@ -272,10 +271,9 @@ def get_pairs(pairs_list, shuffle=True, seed=2, sample_once=True):
         if len(pairs_list_f4):
             selected_pair = pairs_list_f4[0]
         else:
-            print("don't apply final filter")
+            print("some duplicate IDs present")
             selected_pair = pairs_list_f3[0]
         selected_ids = [sample[0] for sample in selected_pair]
         used_ids += selected_ids
         selected_pairs.append(selected_pair)
-        print(len(selected_pairs))
     return selected_pairs
