@@ -233,11 +233,15 @@ def read_gmt(path):
         return gmt, gmt_suffix
 
 
-def build_pairs_list(data, filter_column, value, split):
+def build_pairs_list(data, filter_column, value, split, transform=None):
     """ generate pairs of samples """
     data_f = data[data[filter_column] == value]
-    samples = [(x, y) for x, y in
-               zip(data_f['ID'].tolist(), data_f[split].tolist())]
+    ids_list = data_f['ID'].tolist()
+    splits_list = data_f[split].tolist()
+    if transform:
+        splits_list = transform(splits_list)
+    samples = [(x, y) for x, y in 
+               zip(ids_list, splits_list)]
     samples = sorted(samples, key=lambda x: x[1])
     pairs_list = [x for x in combinations(samples, 2)]
     return pairs_list
@@ -246,13 +250,11 @@ def build_pairs_list(data, filter_column, value, split):
 def get_pairs(pairs_list, shuffle=True, seed=47, sample_once=False):
     """ Added function to return a set of pairs that have each sample in data
     at least once """
-    sample_list = list(set([sample[0] for pair
-                            in pairs_list for sample in pair]))
+    sample_list = sorted(list(set([sample[0] for pair
+                                   in pairs_list for sample in pair])))
     used_ids = []
     selected_pairs = []
-    if shuffle:
-        np.random.seed(seed)
-        np.random.shuffle(sample_list)
+    prng = np.random.RandomState(seed)
     for sample in sample_list:
         if sample_once:
             if sample in used_ids:
@@ -261,18 +263,13 @@ def get_pairs(pairs_list, shuffle=True, seed=47, sample_once=False):
         pairs_list_f1 = [x for x in pairs_list_f0
                          if sample in [x[0][0], x[1][0]]]
         pairs_list_f2 = [x for x in pairs_list_f1 if x[0][1] != x[1][1]]
-        if shuffle:
-            np.random.seed(seed)
-            np.random.shuffle(pairs_list_f2)
         pairs_list_f3 = [x for x in pairs_list_f2 if x not in selected_pairs]
         pairs_list_f4 = [x for x in pairs_list_f3
                          if ((x[0][0] not in used_ids) and
                              (x[1][0] not in used_ids))]
-        if len(pairs_list_f4):
-            selected_pair = pairs_list_f4[0]
-        else:
-            print("some duplicate IDs present")
-            selected_pair = pairs_list_f3[0]
+        if len(pairs_list_f4) > 0:
+            pairs_list_f3 = pairs_list_f4
+        selected_pair = pairs_list_f3[prng.choice(len(pairs_list_f3)) - 1]
         selected_ids = [sample[0] for sample in selected_pair]
         used_ids += selected_ids
         selected_pairs.append(selected_pair)
