@@ -1,8 +1,0 @@
-{
-    "infile": "~/Data/AMP-AD/MSBB/msbb-wrangled.tsv",
-    "outfolder": "class_proba_bcg_leave_area_out",
-    "meta_cols": ["ID", "CDR", "Braak", "BrodmannArea", "Barcode"],
-    "target": "Braak",
-    "subset_col": "BrodmannArea",
-    "subsets": ["BM10", "BM44", "BM22", "BM36"]
-}
