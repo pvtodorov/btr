@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from itertools import combinations
-from utilities import recursivedict, check_or_create_dir
+from utilities import (recursivedict, check_or_create_dir, get_outdir_path,
+                       get_outfile_name)
 import uuid
 import json
 from dataset import Dataset
@@ -70,33 +71,11 @@ class LPOCV(Processor):
         self._build_df_result()
 
     def save_results(self, gmt=None):
-        self._get_outdir_path(gmt)
+        self._outdir_path = get_outdir_path(settings, gmt=gmt)
         check_or_create_dir(self._outdir_path)
-        self._get_outfile_name(gmt)
+        self._outfile_name = get_outfile_name(gmt=gmt)
         results_path = self._outdir_path + self._outfile_name
         self.df_result.to_csv(results_path, index=False)
-
-    def _get_outdir_path(self, gmt):
-        dset_name = self.s["dataset"]["name"]
-        scheme_name = self.s["processing_scheme"]["name"]
-        subset_name = self.s["processing_scheme"]["subset"]
-        est_name = self.s["estimator"]["name"]
-        prediction_type = "background_predictions"
-        if gmt:
-            prediction_type = "geneset_predictions"
-        outdir_path = (dset_name + '/' +
-                       scheme_name + '/' + subset_name + '/' +
-                       est_name + '/' +
-                       prediction_type + '/')
-        self._outdir_path = outdir_path
-
-    def _get_outfile_name(self, gmt):
-        if gmt:
-            outfile_name = gmt.suffix
-        else:
-            outfile_name = str(uuid.uuid4())
-        outfile_name = outfile_name + '.csv'
-        self._outfile_name = outfile_name
 
     def _build_bcg_predictions(self, selected_cols, k):
         self._get_pairs(**self.s["processing_scheme"]["pair_settings"])
