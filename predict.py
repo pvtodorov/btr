@@ -19,5 +19,8 @@ if __name__ == '__main__':
         gmt = GMT(gmt_path)
     proc = Loader.processor_from_settings(settings_path=settings_path)
     proc.from_settings()
-    proc.predict_background()
+    if gmt:
+        proc.predict_gmt(gmt)
+    else:
+        proc.predict_background()
     proc.save_results(gmt)
