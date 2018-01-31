@@ -6,7 +6,7 @@ class GMT(object):
     def __init__(self, filepath):
         self.filepath = filepath
         self.gmt = []
-        self.gmt_suffix = ''
+        self.suffix = ''
         self._read_gmt()
 
     def generate(self, dataset_genes=None):
@@ -46,7 +46,7 @@ class GMT(object):
                         gene_list.append(row[0])
                     gmt.append([f, 'user defined'] + gene_list)
         self.gmt = gmt
-        self.gmt_suffix = gmt_suffix
+        self.suffix = gmt_suffix
 
 
 def _gene_list_intersect(gmt_genes, dataset_genes):
