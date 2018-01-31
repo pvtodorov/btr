@@ -3,8 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from itertools import combinations
 from utilities import (recursivedict, check_or_create_dir, get_outdir_path,
-                       get_outfile_name)
-import uuid
+                       get_outfile_name, digitize_labels)
 import json
 from dataset import Dataset
 from estimators import get_estimator
@@ -71,10 +70,11 @@ class LPOCV(Processor):
         self._build_df_result()
 
     def save_results(self, gmt=None):
-        self._outdir_path = get_outdir_path(settings, gmt=gmt)
+        self._outdir_path = get_outdir_path(self.s, gmt=gmt)
         check_or_create_dir(self._outdir_path)
         self._outfile_name = get_outfile_name(gmt=gmt)
         results_path = self._outdir_path + self._outfile_name
+        print(results_path)
         self.df_result.to_csv(results_path, index=False)
 
     def _build_bcg_predictions(self, selected_cols, k):
@@ -170,12 +170,3 @@ def get_sampling_range(settings):
         range_section = list(range(start, end + step, step))
         sampling_range += range_section
     return sampling_range
-
-
-def digitize_labels(y, transform_thresholds):
-    """ Take Braak scores and digitize them such that:
-    [0, 1, 2, 3] -> 0
-    [4, 5, 6]    -> 1
-    """
-    y_bin = np.digitize(y, transform_thresholds) - 1
-    return y_bin
