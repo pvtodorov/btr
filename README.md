@@ -1,6 +1,13 @@
 # amp-ad: Analysis of AMP-AD datasets
 
+**Authors:** Petar Todorov<sup>1</sup>, Artem Sokolov<sup>1</sup><br />
+<sup>1</sup>Laboratory of Systems Pharmacology, Harvard Medical School
+
 ## Preliminaries
+
+Nearly all of the scripts in this repository offer a command-line interface, allowing for modular design and execution of new analyses. However, to ensure that the command-line interfaces behave as expected, it is important to preconfigure the underlying `R` and `Python` environments as follows.
+
+### Set up an R environment
 To execute R scripts in this repository, you will need to pre-install several R packages. Since some of these packages come from Bioconductor, the easiest thing to do is to run the following two commands inside R:
 
     source("https://bioconductor.org/biocLite.R")
@@ -8,14 +15,7 @@ To execute R scripts in this repository, you will need to pre-install several R 
     
 (Go get a cup of coffee...)
 
-## Wrangling data
-The datasets used by the analyses in this repository can be easily downloaded using command-line scripts. To download Mount Sinai Brain Bank (MSBB) dataset, run the following on the command line:
-
-    Rscript msbb.R <path to data>
-
-If `<path to data>` is left blank, then `/data/AMP-AD/MSBB` will be used by default.
-
-## Set up a python env
+### Set up a python environment
 Make sure `virtualenv` is installed. If not, install it via pip.
     
     pip install virtualenv
@@ -32,6 +32,12 @@ Install the packages we need
     
     pip install -r requirements.txt
 
+## Wrangle data
+The datasets used by the analyses in this repository can be easily downloaded using command-line scripts. To download Mount Sinai Brain Bank (MSBB) dataset, run the following on the command line:
+
+    Rscript msbb.R <path to data>
+
+If `<path to data>` is left blank, then `/data/AMP-AD/MSBB` will be used by default.
 
 ## Obtain background predictions
 We will use a random forest regression to predict the Braak score of of samples

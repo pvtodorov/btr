@@ -1,0 +1,25 @@
+{
+    "dataset":{"name": "MSBB_RNAseq",
+               "filepath": "~/Data/AMP-AD/MSBB/msbb-wrangled.tsv",
+               "meta_columns": ["ID", "CDR", "Braak", "BrodmannArea", "Barcode"],
+               "target": "Braak",
+               "ID_column": "ID"
+              },
+    "estimator": {"name": "Multiclass_Linear",
+                  "estimator_params":{}
+                 },
+    "processing_scheme": {"name": "LPOCV",
+                          "subset_col": "BrodmannArea",
+                          "subset": "BM22",
+                          "pair_col": "ID",
+                          "transform_labels": [0, 3, 5],
+                          "pair_settings" : {"shuffle": true,
+                                             "seed": 47,
+                                             "sample_once": false
+                          }
+                         },
+    "background_params": {"intervals": [{"step": 10, "start": 10, "end": 500},
+                                        {"step": 100, "start": 500, "end": 1000}]
+                         },
+    "misc": {}
+}
