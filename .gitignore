@@ -46,3 +46,9 @@ vignettes/*.pdf
 # Plots
 *.png
 *.pdf
+
+__pycache__/
+
+\.vscode/
+
+\.DS_Store
