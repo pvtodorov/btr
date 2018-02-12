@@ -16,8 +16,8 @@ class GMT(object):
             gene_list = inst[2:]
             missing_list = []
             if dataset_genes:
-                gene_list = [x for x in gene_list if x in dataset_genes]
-                missing_list = [x for x in gene_list if x not in dataset_genes]
+                gene_list, missing_list = gene_list_intersect(gene_list,
+                                                              dataset_genes)
             yield(link, desc, gene_list, missing_list)
 
     def _read_gmt(self):
@@ -49,7 +49,7 @@ class GMT(object):
         self.suffix = gmt_suffix
 
 
-def _gene_list_intersect(gmt_genes, dataset_genes):
+def gene_list_intersect(gmt_genes, dataset_genes):
     """ return the intersection between the current gene list HGNC symbols and
     the columns in the dataset. return a second list, `missing` for any genes
     that are missing.

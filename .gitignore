@@ -52,3 +52,9 @@ __pycache__/
 \.vscode/
 
 \.DS_Store
+
+logs/
+
+dask-worker-space/
+
+*.dat
