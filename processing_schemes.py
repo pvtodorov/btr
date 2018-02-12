@@ -74,7 +74,6 @@ class LPOCV(Processor):
         check_or_create_dir(self._outdir_path)
         self._outfile_name = get_outfile_name(gmt=gmt)
         results_path = self._outdir_path + self._outfile_name
-        print(results_path)
         self.df_result.to_csv(results_path, index=False)
 
     def _build_bcg_predictions(self, selected_cols, k):
