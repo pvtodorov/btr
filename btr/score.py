@@ -3,12 +3,10 @@ from tqdm import tqdm
 import argparse
 import json
 import os
-from utilities import (recursivedict, check_or_create_dir, get_outdir_path,
-                       get_outfile_name, digitize_labels)
-from dataset import Dataset
-from gmt import GMT
+from .utilities import (recursivedict, get_outdir_path, digitize_labels)
+from .dataset import Dataset
+from .gmt import GMT
 import numpy as np
-from pathlib import Path
 
 
 class Scorer(object):
@@ -50,7 +48,6 @@ class Scorer(object):
         else:
             bg_runs = os.listdir(outfolder)
             bg_runs = [x for x in bg_runs if '.csv' in x]
-        aggregate_runs = pd.DataFrame()
         auc_dict_list = []
         for fn in tqdm(bg_runs):
             df = pd.read_csv(outfolder + fn)

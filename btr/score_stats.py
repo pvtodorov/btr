@@ -3,10 +3,10 @@ from tqdm import tqdm
 import argparse
 import json
 import os
-from utilities import (recursivedict, check_or_create_dir, get_outdir_path,
-                       get_outfile_name, digitize_labels)
-from dataset import Dataset
-from gmt import GMT
+from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
+                        get_outfile_name, digitize_labels)
+from .dataset import Dataset
+from .gmt import GMT
 import numpy as np
 from statsmodels.sandbox.stats.multicomp import multipletests
 
