@@ -9,19 +9,6 @@ from .dataset import Dataset
 from .estimators import get_estimator
 
 
-class Loader(object):
-    @staticmethod
-    def processor_from_settings(settings_path):
-        if settings_path:
-            with open(settings_path) as f:
-                settings = json.load(f)
-        name = settings["processing_scheme"]["name"]
-        if name == 'LPOCV':
-            return LPOCV(settings=settings)
-        else:
-            raise NotImplementedError
-
-
 class Processor(object):
     def __init__(self, settings=None, dataset=None, estimator=None):
         self.s = None
