@@ -3,12 +3,11 @@ from tqdm import tqdm
 import argparse
 import json
 import os
-from utilities import (recursivedict, check_or_create_dir, get_outdir_path,
-                       get_outfile_name, digitize_labels)
-from dataset import Dataset
-from gmt import GMT
+from .utilities import (recursivedict, get_outdir_path, digitize_labels)
+from .dataset import Dataset
+from .gmt import GMT
 import numpy as np
-from pathlib import Path
+from statsmodels.sandbox.stats.multicomp import multipletests
 
 
 class Scorer(object):
@@ -50,7 +49,6 @@ class Scorer(object):
         else:
             bg_runs = os.listdir(outfolder)
             bg_runs = [x for x in bg_runs if '.csv' in x]
-        aggregate_runs = pd.DataFrame()
         auc_dict_list = []
         for fn in tqdm(bg_runs):
             df = pd.read_csv(outfolder + fn)
@@ -97,6 +95,50 @@ class Scorer(object):
             auc_df.to_csv(outfolder + gmt.suffix + '_auc.csv', index=False)
         else:
             auc_df.to_csv(outfolder + 'background_auc.csv', index=False)
+
+    def get_stats(self, gmt_path):
+        folder = (self.s['dataset']['name'] + '/' +
+                  self.s["processing_scheme"]["name"] + '/' +
+                  self.s['processing_scheme']['subset'] + '/' +
+                  self.s["estimator"]["name"] + '/')
+        gmt = GMT(gmt_path)
+        dataset = Dataset(self.s)
+        scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
+        background = pd.read_csv(folder + 'background_auc.csv')
+        bcg_cols = background.columns.tolist()
+        bcg_cols = [int(x) for x in bcg_cols]
+
+        data_cols = dataset.data_cols
+        scores = []
+        for link, desc, g_list, m_list in gmt.generate(dataset_genes=data_cols):
+            gene_list = g_list + m_list
+            intersect = g_list
+            if len(intersect) < 1:
+                continue
+            s = {}
+            s['id'] = link
+            s['description'] = desc
+            s['AUC'] = scored_predictions[link].tolist()[0]
+            s['n_genes'] = len(gene_list)
+            s['intersect'] = len(intersect)
+            b_idx = (np.abs(np.array(bcg_cols) - len(intersect))).argmin()
+            b_col = str(bcg_cols[b_idx])
+            bcg_vals = background[b_col].tolist()
+            bcg_vals_t = [x for x in bcg_vals if x > s['AUC']]
+            s['p_value'] = len(bcg_vals_t) / len(bcg_vals)
+            scores.append(s)
+
+        df_scores = pd.DataFrame(scores)
+
+        p_values = df_scores['p_value'].tolist()
+        mt = multipletests(p_values, alpha=0.05, method='fdr_bh')
+        df_scores['adjusted_p'] = mt[1]
+        df_scores = df_scores.sort_values(by=['adjusted_p', 'AUC'],
+                                          ascending=[True, False])
+
+        df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
+                               'AUC', 'p_value', 'adjusted_p']]
+        df_scores.to_csv(folder + gmt.suffix + '_stats.csv', index=False)
 
 
 if __name__ == '__main__':

@@ -2,24 +2,11 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from itertools import combinations
-from utilities import (recursivedict, check_or_create_dir, get_outdir_path,
-                       get_outfile_name, digitize_labels)
+from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
+                        get_outfile_name, digitize_labels)
 import json
-from dataset import Dataset
-from estimators import get_estimator
-
-
-class Loader(object):
-    @staticmethod
-    def processor_from_settings(settings_path):
-        if settings_path:
-            with open(settings_path) as f:
-                settings = json.load(f)
-        name = settings["processing_scheme"]["name"]
-        if name == 'LPOCV':
-            return LPOCV(settings=settings)
-        else:
-            raise NotImplementedError
+from .dataset import Dataset
+from .estimators import get_estimator
 
 
 class Processor(object):
