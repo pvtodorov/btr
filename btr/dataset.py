@@ -17,6 +17,7 @@ class Dataset(object):
         self.data = pd.DataFrame()
         self._load_data()
         self._get_data_cols()
+        self.filter_dataset(settings)
 
     def _get_data_cols(self):
         """ Given a dataframe and its meta columns, get back a list of the data
@@ -59,6 +60,14 @@ class Dataset(object):
         X_test = df_test.as_matrix(columns=selected_cols)
         y_test = df_test[self.target].tolist()
         return X_train, y_train, X_test, y_test
+
+    def filter_dataset(self, settings):
+        if settings.get('filter'):
+            data = self.data
+            filters = settings['dataset']['filter']['filters']
+            for f in filters:
+                data = data[data[f['column']].isin(f['values'])]
+            self.data = data
 
 
 def get_train_test_df(df, test_ids, column):

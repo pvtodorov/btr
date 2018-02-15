@@ -19,13 +19,16 @@ def check_or_create_dir(path):
 
 def get_outdir_path(settings, gmt=None):
     dset_name = settings["dataset"]["name"]
+    filter_name = ""
+    if settings['dataset'].get("filter"):
+        filter_name = "/" + settings["dataset"]["filter"]["name"]
     scheme_name = settings["processing_scheme"]["name"]
     subset_name = settings["processing_scheme"]["subset"]
     est_name = settings["estimator"]["name"]
     prediction_type = "background_predictions"
     if gmt:
         prediction_type = "geneset_predictions"
-    outdir_path = (dset_name + '/' +
+    outdir_path = (dset_name + filter_name + '/' +
                    scheme_name + '/' + subset_name + '/' +
                    est_name + '/' +
                    prediction_type + '/')
