@@ -41,6 +41,7 @@ def get_outfile_name(gmt=None):
     else:
         outfile_name = str(uuid.uuid4())
     outfile_name = outfile_name + '.csv'
+    print('outfile name: ' + outfile_name)
     return outfile_name
 
 
