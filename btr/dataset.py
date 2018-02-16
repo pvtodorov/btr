@@ -62,7 +62,7 @@ class Dataset(object):
         return X_train, y_train, X_test, y_test
 
     def filter_dataset(self, settings):
-        if settings.get('filter'):
+        if settings['dataset'].get('filter'):
             data = self.data
             filters = settings['dataset']['filter']['filters']
             for f in filters:

@@ -1,4 +1,4 @@
-# amp-ad: Better than Random analysis
+# Better than Random analysis
 
 **Authors:** Petar Todorov<sup>1</sup>, Artem Sokolov<sup>1</sup><br />
 <sup>1</sup>Laboratory of Systems Pharmacology, Harvard Medical School
