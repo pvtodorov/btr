@@ -97,10 +97,8 @@ class Scorer(object):
             auc_df.to_csv(outfolder + 'background_auc.csv', index=False)
 
     def get_stats(self, gmt_path):
-        folder = (self.s['dataset']['name'] + '/' +
-                  self.s["processing_scheme"]["name"] + '/' +
-                  self.s['processing_scheme']['subset'] + '/' +
-                  self.s["estimator"]["name"] + '/')
+        folder = get_outdir_path(self.s, gmt=None)
+        folder = folder.split('background_predictions/')[0]
         gmt = GMT(gmt_path)
         dataset = Dataset(self.s)
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
