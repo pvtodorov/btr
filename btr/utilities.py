@@ -17,7 +17,7 @@ def check_or_create_dir(path):
         os.makedirs(path)
 
 
-def get_outdir_path(settings, gmt=None, sep='/'):
+def get_outdir_path(settings, gmt=None, sep='-'):
     dset_name = settings["dataset"]["name"]
     filter_name = ""
     if settings['dataset'].get("filter"):
@@ -26,9 +26,12 @@ def get_outdir_path(settings, gmt=None, sep='/'):
     subset_name = settings["processing_scheme"]["subset"]
     subset_name = subset_name.replace('/', '-')
     est_name = settings["estimator"]["name"]
+    if settings['misc'].get('tag'):
+        misc_tag = sep + settings["misc"]["tag"]
     outdir_path = (dset_name + filter_name + sep +
                    scheme_name + sep + subset_name + sep +
-                   est_name + '/')
+                   est_name +
+                   misc_tag + '/')
     return outdir_path
 
 

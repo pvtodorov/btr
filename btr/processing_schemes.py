@@ -57,7 +57,7 @@ class LPOCV(Processor):
         self._build_df_result()
 
     def save_results(self, gmt=None):
-        self._outdir_path = get_outdir_path(self.s, sep='-')
+        self._outdir_path = get_outdir_path(self.s)
         if gmt:
             self._outdir_path += 'geneset_predictions/'
         else:

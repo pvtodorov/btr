@@ -41,7 +41,7 @@ class Scorer(object):
         self.y = y_dict
 
     def score_LPOCV(self, gmt_path=None):
-        outfolder = get_outdir_path(self.s, sep='-')
+        outfolder = get_outdir_path(self.s)
         if gmt_path:
             outfolder += 'geneset_predictions/'
             gmt = GMT(gmt_path)
@@ -94,7 +94,7 @@ class Scorer(object):
             auc_df.to_csv(outfolder + '../' + 'background_auc.csv', index=False)
 
     def get_stats(self, gmt_path):
-        folder = get_outdir_path(self.s, sep='-')
+        folder = get_outdir_path(self.s)
         gmt = GMT(gmt_path)
         dataset = Dataset(self.s)
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
