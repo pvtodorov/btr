@@ -41,12 +41,13 @@ class Scorer(object):
         self.y = y_dict
 
     def score_LPOCV(self, gmt_path=None):
-        outfolder = get_outdir_path(self.s, gmt=None)
+        outfolder = get_outdir_path(self.s, sep='-')
         if gmt_path:
-            outfolder = outfolder.split('background_predictions/')[0] + 'geneset_predictions/'
+            outfolder += 'geneset_predictions/'
             gmt = GMT(gmt_path)
             bg_runs = [gmt.suffix + '.csv']
         else:
+            outfolder += 'background_predictions/'
             bg_runs = os.listdir(outfolder)
             bg_runs = [x for x in bg_runs if '.csv' in x]
         auc_dict_list = []
@@ -87,18 +88,13 @@ class Scorer(object):
             auc_df = auc_df.rename(columns={a: int(a) for a in cols})
         cols = auc_df.columns.tolist()
         auc_df = auc_df[list(sorted(cols))]
-        if 'background_predictions/' in outfolder:
-            outfolder = outfolder.split('background_predictions/')[0]
-        if 'geneset_predictions/' in outfolder:
-            outfolder = outfolder.split('geneset_predictions/')[0]
         if gmt_path:
-            auc_df.to_csv(outfolder + gmt.suffix + '_auc.csv', index=False)
+            auc_df.to_csv(outfolder + '../' + gmt.suffix + '_auc.csv', index=False)
         else:
-            auc_df.to_csv(outfolder + 'background_auc.csv', index=False)
+            auc_df.to_csv(outfolder + '../' + 'background_auc.csv', index=False)
 
     def get_stats(self, gmt_path):
-        folder = get_outdir_path(self.s, gmt=None)
-        folder = folder.split('background_predictions/')[0]
+        folder = get_outdir_path(self.s, sep='-')
         gmt = GMT(gmt_path)
         dataset = Dataset(self.s)
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
