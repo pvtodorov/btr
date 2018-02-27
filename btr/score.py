@@ -60,20 +60,19 @@ class Scorer(object):
             for p_idx in pair_idx:
                 df_0 = df[df['pair_index'] == p_idx]
                 y_true = [self.y[x] for x in df_0['ID'].tolist()]
-                diff_true = np.diff(y_true)[0]
-                sign_true = np.sign(diff_true)
                 for col_n in col_numbers:
                     y_pred = df_0[col_n].tolist()
-                    diff_pred = np.diff(y_pred)[0]
-                    sign_pred = np.sign(diff_pred)
-                    diff_sign = np.sign(np.diff([sign_true, sign_pred])[0])
-                    if diff_pred == 0:
-                        pairs[col_n][p_idx] = 0.5
+                    y_pred_sorted = [x for _, x in
+                                     sorted(zip(y_true, y_pred),
+                                            key=lambda y: y[0])]
+                    lo, hi = y_pred_sorted[0], y_pred_sorted[1]
+                    if lo == hi:
+                        auc = 0.5
+                    elif lo < hi:
+                        auc = 1
                     else:
-                        if diff_sign == 0:
-                            pairs[col_n][p_idx] = 1
-                        else:
-                            pairs[col_n][p_idx] = 0
+                        auc = 0
+                    pairs[col_n][p_idx] = auc
             out = pd.DataFrame(pairs)
             cols = out.columns.tolist()
             if not gmt_path:
@@ -89,9 +88,11 @@ class Scorer(object):
         cols = auc_df.columns.tolist()
         auc_df = auc_df[list(sorted(cols))]
         if gmt_path:
-            auc_df.to_csv(outfolder + '../' + gmt.suffix + '_auc.csv', index=False)
+            auc_df.to_csv(outfolder + '../' + gmt.suffix + '_auc.csv',
+                          index=False)
         else:
-            auc_df.to_csv(outfolder + '../' + 'background_auc.csv', index=False)
+            auc_df.to_csv(outfolder + '../' + 'background_auc.csv',
+                          index=False)
 
     def get_stats(self, gmt_path):
         folder = get_outdir_path(self.s)
@@ -102,9 +103,9 @@ class Scorer(object):
         bcg_cols = background.columns.tolist()
         bcg_cols = [int(x) for x in bcg_cols]
 
-        data_cols = dataset.data_cols
+        d_cols = dataset.data_cols
         scores = []
-        for link, desc, g_list, m_list in gmt.generate(dataset_genes=data_cols):
+        for link, desc, g_list, m_list in gmt.generate(dataset_genes=d_cols):
             gene_list = g_list + m_list
             intersect = g_list
             if len(intersect) < 1:

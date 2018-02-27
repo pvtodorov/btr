@@ -79,7 +79,10 @@ class LPOCV(Processor):
                 y_train = digitize_labels(y_train, self._transform)
                 e = self.e
                 e = e.fit(X_train, y_train)
-                predictions = e.predict(X_test)
+                if self.s["estimator"]["probability"]:
+                    predictions = e.predict_proba(X_test)[:, 1]
+                else:
+                    predictions = e.predict(X_test)
                 for i_s, p in zip(pair_ids, predictions):
                     self._bcg_predictions[pair_index][i_s][k] = p
 
