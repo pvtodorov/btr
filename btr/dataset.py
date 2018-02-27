@@ -76,4 +76,6 @@ def get_train_test_df(df, test_ids, column):
     """
     df_train = df[~df[column].isin(test_ids)]
     df_test = df[df[column].isin(test_ids)]
+    df_test.index = pd.Categorical(df_test[column], categories=test_ids)
+    df_test = df_test.sort_index().reset_index(drop=True)
     return df_train, df_test
