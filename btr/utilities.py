@@ -18,6 +18,8 @@ def check_or_create_dir(path):
 
 
 def get_outdir_path(settings, gmt=None, sep='-'):
+    """ Assembles the path of the output directory from the settings file
+    """
     dset_name = settings["dataset"]["name"]
     filter_name = ""
     if settings['dataset'].get("filter"):
