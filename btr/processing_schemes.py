@@ -28,6 +28,13 @@ class Processor(object):
 
 
 class LPOCV(Processor):
+    """Leave-Pair-Out Cross-Validation scheme
+
+    Implements leave-pair-out cross-validation in which each pairs of samples
+    are chosen from the dataset followed by training on all but one pair and
+    predicting the target variable for the withheld pair.
+    """
+    
     def __init__(self, settings=None, dataset=None, estimator=None):
         super().__init__(settings=settings,
                          dataset=dataset,
