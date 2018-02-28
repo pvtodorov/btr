@@ -10,6 +10,11 @@ from .estimators import get_estimator
 
 
 class Processor(object):
+    """Processor base class.
+    The purpose of processors is to allow a user to produce predictions of both
+    background and gmt gene lists.
+    """
+
     def __init__(self, settings=None, dataset=None, estimator=None):
         self.s = None
         if settings:
@@ -20,15 +25,6 @@ class Processor(object):
         self.e = None
         if estimator:
             self.e = estimator
-
-    def from_settings(self, settings_path=None):
-        if settings_path:
-            with open(settings_path) as f:
-                settings = json.load(f)
-            self.s = settings
-        if self.s:
-            self.d = Dataset(self.s)
-            self.e = get_estimator(self.s)
 
 
 class LPOCV(Processor):
