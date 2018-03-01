@@ -60,11 +60,21 @@ class LPOCV(Processor):
         self._build_df_result()
 
     def predict_gmt(self, gmt):
+        """Performs a gmt prediction run as sepcified in the `settings`
+
+        Reads in lists of features from a `gmt` and uses them to fit a model
+        and make a prediction.
+        """
         for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols)):
             self._build_bcg_predictions(gene_list, link)
         self._build_df_result()
 
     def save_results(self, gmt=None):
+        """Saves prediction results as csv files.
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `geneset_predictions/`
+        """
         self._outdir_path = get_outdir_path(self.s)
         if gmt:
             self._outdir_path += 'geneset_predictions/'
