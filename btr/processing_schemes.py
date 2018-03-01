@@ -4,9 +4,6 @@ from tqdm import tqdm
 from itertools import combinations
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
                         get_outfile_name, digitize_labels)
-import json
-from .dataset import Dataset
-from .estimators import get_estimator
 
 
 class Processor(object):
@@ -34,7 +31,7 @@ class LPOCV(Processor):
     are chosen from the dataset followed by training on all but one pair and
     predicting the target variable for the withheld pair.
     """
-    
+
     def __init__(self, settings=None, dataset=None, estimator=None):
         super().__init__(settings=settings,
                          dataset=dataset,
