@@ -48,6 +48,11 @@ class LPOCV(Processor):
         self._outfile_name = ''
 
     def predict_background(self):
+        """Performs a background prediction run as sepcified in the `settings`
+
+        Uses `get_sampling_range` to produce a range of feature set sizes over
+        which to sample as specified by the `background_params` in `settings`.
+        """
         sampling_range = get_sampling_range(self.s)
         for k in tqdm(sampling_range):
             gene_list = self.d.sample_data_cols(k)
