@@ -4,12 +4,14 @@ from tqdm import tqdm
 from itertools import combinations
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
                         get_outfile_name, digitize_labels)
-import json
-from .dataset import Dataset
-from .estimators import get_estimator
 
 
 class Processor(object):
+    """Processor base class.
+    The purpose of processors is to allow a user to produce predictions of both
+    background and gmt gene lists.
+    """
+
     def __init__(self, settings=None, dataset=None, estimator=None):
         self.s = None
         if settings:
@@ -21,17 +23,15 @@ class Processor(object):
         if estimator:
             self.e = estimator
 
-    def from_settings(self, settings_path=None):
-        if settings_path:
-            with open(settings_path) as f:
-                settings = json.load(f)
-            self.s = settings
-        if self.s:
-            self.d = Dataset(self.s)
-            self.e = get_estimator(self.s)
-
 
 class LPOCV(Processor):
+    """Leave-Pair-Out Cross-Validation scheme
+
+    Implements leave-pair-out cross-validation in which each pairs of samples
+    are chosen from the dataset followed by training on all but one pair and
+    predicting the target variable for the withheld pair.
+    """
+
     def __init__(self, settings=None, dataset=None, estimator=None):
         super().__init__(settings=settings,
                          dataset=dataset,
@@ -45,6 +45,11 @@ class LPOCV(Processor):
         self._outfile_name = ''
 
     def predict_background(self):
+        """Performs a background prediction run as sepcified in the `settings`
+
+        Uses `get_sampling_range` to produce a range of feature set sizes over
+        which to sample as specified by the `background_params` in `settings`.
+        """
         sampling_range = get_sampling_range(self.s)
         for k in tqdm(sampling_range):
             gene_list = self.d.sample_data_cols(k)
@@ -52,11 +57,21 @@ class LPOCV(Processor):
         self._build_df_result()
 
     def predict_gmt(self, gmt):
+        """Performs a gmt prediction run as sepcified in the `settings`
+
+        Reads in lists of features from a `gmt` and uses them to fit a model
+        and make a prediction.
+        """
         for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols)):
             self._build_bcg_predictions(gene_list, link)
         self._build_df_result()
 
     def save_results(self, gmt=None):
+        """Saves prediction results as csv files.
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `geneset_predictions/`
+        """
         self._outdir_path = get_outdir_path(self.s)
         if gmt:
             self._outdir_path += 'geneset_predictions/'
@@ -68,6 +83,14 @@ class LPOCV(Processor):
         self.df_result.to_csv(results_path, index=False)
 
     def _build_bcg_predictions(self, selected_cols, k):
+        """Performs LPOCV and updates the Processor's `_bcg_predictions` dict
+
+        This function is given `selected_cols` corresponding to the selected
+        features and `k` a value corresponding to what these selected features
+        should be called. In the random case, `k` is a number of selected
+        features. In the case where a feature set is supplied via `gmt`, `k`
+        corresponds to `gmt.suffix`
+        """
         self._get_pairs(**self.s["processing_scheme"]["pair_settings"])
         for pair_index, pair in enumerate(tqdm(self.selected_pairs)):
                 pair_ids = (pair[0][0], pair[1][0])
@@ -87,6 +110,7 @@ class LPOCV(Processor):
                     self._bcg_predictions[pair_index][i_s][k] = p
 
     def _build_df_result(self):
+        """Produces a dataframe from `self._bcg_predictions`"""
         for pair_index, p in self._bcg_predictions.items():
             df_result_t = pd.DataFrame(p)
             df_result_t = df_result_t.transpose()
@@ -101,7 +125,13 @@ class LPOCV(Processor):
             self.df_result = self.df_result.append(df_result_t)
 
     def _build_pairs_list(self):
-        """ generate pairs of samples """
+        """Generates all possible pairs of samples.
+
+        From `settings`
+        - Filters dataframe such that `subset_col` is limited to `subset`
+        - uses `transform` to `digitize_labels`
+        - creates all possible pairs of samples
+        """
         dataset = self.d
         settings = self.s
         transform = self._transform
@@ -120,8 +150,15 @@ class LPOCV(Processor):
         self._pairs_list = pairs_list
 
     def _get_pairs(self, shuffle=True, seed=47, sample_once=False):
-        """ Added function to return a set of pairs that have each sample
-        in data at least once """
+        """Generates reproducible list of pairs to use for LPOCV.
+
+        Keyword arguments:
+        shuffle -- whether or not to shuffle the pairs from
+                   `_build_pairs_list()`. (default True)
+        seed -- seed to use when shuffling pairs. (default 47)
+        sample_once -- makes an effort to include each in the dataset at most
+                       once. (default False)
+        """
         self.selected_pairs = []
         if len(self._pairs_list) == 0:
             self._build_pairs_list()
@@ -154,6 +191,8 @@ class LPOCV(Processor):
 
 
 def get_sampling_range(settings):
+    """Returns a list of feature set lengths for background sampling.
+    """
     interval_params_list = settings['background_params']['intervals']
     sampling_range = []
     for params in interval_params_list:

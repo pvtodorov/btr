@@ -62,6 +62,17 @@ class Dataset(object):
         return X_train, y_train, X_test, y_test
 
     def filter_dataset(self, settings):
+        """ A filter defined in settings['dataset']['filter']['filters'] can
+        be applied to the loaded dataset. An example filter:
+        "filter": {"name": "AB",
+                   "filters": [{"column": "Braak", "values": [0, 1, 2, 3, 4]}]
+                  }
+
+        The filter "name" is used in naming the folder that output files are 
+        deposited into. The "filters" list specifies a list of dicts, each
+        of which defines a "column" to limit and a list of values to limit the
+        column to.
+        """
         if settings['dataset'].get('filter'):
             data = self.data
             filters = settings['dataset']['filter']['filters']

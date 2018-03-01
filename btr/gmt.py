@@ -10,6 +10,15 @@ class GMT(object):
         self._read_gmt()
 
     def generate(self, dataset_genes=None):
+        """Yields a link, a description, list of matching and missing genes.
+
+        Keyword arguments:
+        dataset_genes -- list of data columns in the dataset (default None)
+
+        If `dataset_genes` is supplied `gene_list` is a list of genes that
+        match between the gmt file and the dataset. If not, the entire list
+        of genes gmt genes is returned.
+        """
         for inst in self.gmt:
             link = inst[0]
             desc = inst[1]
@@ -21,7 +30,7 @@ class GMT(object):
             yield(link, desc, gene_list, missing_list)
 
     def _read_gmt(self):
-        """ given a filepath, reads the gmt or txt file at that location, returning
+        """given a filepath, reads the gmt or txt file at that location, returning
         a list that can be used in the scripts
         """
         path = self.filepath
@@ -50,7 +59,7 @@ class GMT(object):
 
 
 def gene_list_intersect(gmt_genes, dataset_genes):
-    """ return the intersection between the current gene list HGNC symbols and
+    """return the intersection between the current gene list HGNC symbols and
     the columns in the dataset. return a second list, `missing` for any genes
     that are missing.
     """
@@ -60,7 +69,7 @@ def gene_list_intersect(gmt_genes, dataset_genes):
 
 
 def _standardize_gmt(gmt):
-    """ Takes a loaded list from a .gmt file and reformats it,
+    """Takes a loaded list from a .gmt file and reformats it,
     if necessary, so that the html id is always at index 0 and the
     description is at index 1
     """

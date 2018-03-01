@@ -18,6 +18,8 @@ def check_or_create_dir(path):
 
 
 def get_outdir_path(settings, gmt=None, sep='-'):
+    """ Assembles the path of the output directory from the settings file
+    """
     dset_name = settings["dataset"]["name"]
     filter_name = ""
     if settings['dataset'].get("filter"):
@@ -36,6 +38,10 @@ def get_outdir_path(settings, gmt=None, sep='-'):
 
 
 def get_outfile_name(gmt=None):
+    """ Returns a name for a file. If a GMT object is given as input, uses
+    `gmt.suffix` to produce a name for the file. If not, the file is understood
+    to be a background file and a uuid is returned.
+    """
     if gmt:
         outfile_name = gmt.suffix
     else:
