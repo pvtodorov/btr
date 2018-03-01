@@ -194,6 +194,8 @@ class LPOCV(Processor):
 
 
 def get_sampling_range(settings):
+    """Returns a list of feature set lengths for background sampling.
+    """
     interval_params_list = settings['background_params']['intervals']
     sampling_range = []
     for params in interval_params_list:
