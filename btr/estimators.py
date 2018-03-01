@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 def get_estimator(settings):
+    """Returns an estmator as specified in the settings dict."""
     est_settings = settings["estimator"]
     name = est_settings["name"]
     params = est_settings["estimator_params"]
