@@ -86,6 +86,14 @@ class LPOCV(Processor):
         self.df_result.to_csv(results_path, index=False)
 
     def _build_bcg_predictions(self, selected_cols, k):
+        """Performs LPOCV and updates the Processor's `_bcg_predictions` dict
+
+        This function is given `selected_cols` corresponding to the selected
+        features and `k` a value corresponding to what these selected features
+        should be called. In the random case, `k` is a number of selected
+        features. In the case where a feature set is supplied via `gmt`, `k`
+        corresponds to `gmt.suffix`
+        """
         self._get_pairs(**self.s["processing_scheme"]["pair_settings"])
         for pair_index, pair in enumerate(tqdm(self.selected_pairs)):
                 pair_ids = (pair[0][0], pair[1][0])
