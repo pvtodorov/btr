@@ -128,7 +128,13 @@ class LPOCV(Processor):
             self.df_result = self.df_result.append(df_result_t)
 
     def _build_pairs_list(self):
-        """ generate pairs of samples """
+        """Generates all possible pairs of samples.
+
+        From `settings`
+        - Filters dataframe such that `subset_col` is limited to `subset`
+        - uses `transform` to `digitize_labels`
+        - creates all possible pairs of samples
+        """
         dataset = self.d
         settings = self.s
         transform = self._transform
