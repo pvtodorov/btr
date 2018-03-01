@@ -153,8 +153,15 @@ class LPOCV(Processor):
         self._pairs_list = pairs_list
 
     def _get_pairs(self, shuffle=True, seed=47, sample_once=False):
-        """ Added function to return a set of pairs that have each sample
-        in data at least once """
+        """Generates reproducible list of pairs to use for LPOCV.
+
+        Keyword arguments:
+        shuffle -- whether or not to shuffle the pairs from
+                   `_build_pairs_list()`. (default True)
+        seed -- seed to use when shuffling pairs. (default 47)
+        sample_once -- makes an effort to include each in the dataset at most
+                       once. (default False)
+        """
         self.selected_pairs = []
         if len(self._pairs_list) == 0:
             self._build_pairs_list()
