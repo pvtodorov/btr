@@ -113,6 +113,7 @@ class LPOCV(Processor):
                     self._bcg_predictions[pair_index][i_s][k] = p
 
     def _build_df_result(self):
+        """Produces a dataframe from `self._bcg_predictions`"""
         for pair_index, p in self._bcg_predictions.items():
             df_result_t = pd.DataFrame(p)
             df_result_t = df_result_t.transpose()
