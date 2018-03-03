@@ -4,6 +4,9 @@ from tqdm import tqdm
 from itertools import combinations
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
                         get_outfile_name, digitize_labels)
+import json
+from .dataset import Dataset
+from .estimators import get_estimator
 
 
 class Processor(object):
@@ -23,6 +26,16 @@ class Processor(object):
         if estimator:
             self.e = estimator
 
+    def from_settings(self, settings_path=None):
+        """Gives the Processor the Dataset and Estimator from settings"""
+        if settings_path:
+            with open(settings_path) as f:
+                settings = json.load(f)
+            self.s = settings
+        if self.s:
+            self.d = Dataset(self.s)
+            self.e = get_estimator(self.s)
+
 
 class LPOCV(Processor):
     """Leave-Pair-Out Cross-Validation scheme
@@ -38,47 +51,43 @@ class LPOCV(Processor):
                          estimator=estimator)
         self.selected_pairs = []
         self.df_result = pd.DataFrame()
+        self.gmt = None
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
         self._transform = settings["processing_scheme"].get("transform_labels")
         self._outdir_path = ''
         self._outfile_name = ''
 
-    def predict_background(self):
-        """Performs a background prediction run as sepcified in the `settings`
+    def predict(self, gmt=None):
+        """Performs a background or hypothesis prediction
 
-        Uses `get_sampling_range` to produce a range of feature set sizes over
-        which to sample as specified by the `background_params` in `settings`.
+        Reads in lists of features from a `gmt` or a random feature list for
+        background and uses them to fit a model and make a predictions
         """
-        sampling_range = get_sampling_range(self.s)
-        for k in tqdm(sampling_range):
-            gene_list = self.d.sample_data_cols(k)
-            self._build_bcg_predictions(gene_list, k)
+        if gmt:
+            self.gmt = gmt
+            for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols)):
+                self._build_bcg_predictions(gene_list, link)
+        else:
+            sampling_range = get_sampling_range(self.s)
+            for k in tqdm(sampling_range):
+                gene_list = self.d.sample_data_cols(k)
+                self._build_bcg_predictions(gene_list, k)
         self._build_df_result()
 
-    def predict_gmt(self, gmt):
-        """Performs a gmt prediction run as sepcified in the `settings`
-
-        Reads in lists of features from a `gmt` and uses them to fit a model
-        and make a prediction.
-        """
-        for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols)):
-            self._build_bcg_predictions(gene_list, link)
-        self._build_df_result()
-
-    def save_results(self, gmt=None):
+    def save_results(self):
         """Saves prediction results as csv files.
 
         Random gene set predictions are placed in `background_predictions/`
-        Gene set predictions are place in `geneset_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
         """
         self._outdir_path = get_outdir_path(self.s)
-        if gmt:
-            self._outdir_path += 'geneset_predictions/'
+        if self.gmt:
+            self._outdir_path += 'hypothesis_predictions/'
         else:
             self._outdir_path += 'background_predictions/'
         check_or_create_dir(self._outdir_path)
-        self._outfile_name = get_outfile_name(gmt=gmt)
+        self._outfile_name = get_outfile_name(gmt=self.gmt)
         results_path = self._outdir_path + self._outfile_name
         self.df_result.to_csv(results_path, index=False)
 
