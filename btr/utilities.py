@@ -87,6 +87,8 @@ def get_settings_annotations(settings):
         settings['estimator']['name']
     annotations['estimator_params'] = \
         "".join(json.dumps(settings['estimator']['estimator_params']).split())
+    annotations["estimator_call"] = \
+        settings["estimator"].get("call", "class")
     annotations['processing_scheme_name'] = \
         settings['processing_scheme']['name']
     if annotations['processing_scheme_name'] == 'LPOCV':
