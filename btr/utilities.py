@@ -51,9 +51,7 @@ def get_outfile_name(gmt=None):
 
 
 def digitize_labels(y, transform_thresholds):
-    """ Take Braak scores and digitize them such that:
-    [0, 1, 2, 3] -> 0
-    [4, 5, 6]    -> 1
+    """ Take Braak scores and digitize them according to thresholds
     """
     y_bin = np.digitize(y, transform_thresholds) - 1
     return y_bin
