@@ -4,6 +4,9 @@ from tqdm import tqdm
 from itertools import combinations
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
                         get_outfile_name, digitize_labels)
+import json
+from .dataset import Dataset
+from .estimators import get_estimator
 
 
 class Processor(object):
@@ -22,6 +25,16 @@ class Processor(object):
         self.e = None
         if estimator:
             self.e = estimator
+
+    def from_settings(self, settings_path=None):
+        """Gives the Processor the Dataset and Estimator from settings"""
+        if settings_path:
+            with open(settings_path) as f:
+                settings = json.load(f)
+            self.s = settings
+        if self.s:
+            self.d = Dataset(self.s)
+            self.e = get_estimator(self.s)
 
 
 class LPOCV(Processor):
