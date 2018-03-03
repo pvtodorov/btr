@@ -15,6 +15,7 @@ setup(name='btr',
                               'btr-stats=btr.command_line:stats_main']},
       install_requires=[
           'mord', 'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
-          'scikit-learn', 'scipy', 'six', 'sklearn', 'statsmodels', 'tqdm'
+          'scikit-learn', 'scipy', 'six', 'sklearn', 'statsmodels', 'tqdm',
+          'synapseclient'
       ]
       )
