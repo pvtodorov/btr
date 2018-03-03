@@ -111,7 +111,7 @@ class LPOCV(Processor):
                 y_train = digitize_labels(y_train, self._transform)
                 e = self.e
                 e = e.fit(X_train, y_train)
-                if self.s["estimator"].get("call"):
+                if self.s["estimator"].get("call") == "probability":
                     predictions = e.predict_proba(X_test)[:, 1]
                 else:
                     predictions = e.predict(X_test)
