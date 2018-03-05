@@ -4,6 +4,7 @@ import synapseclient
 import synapseutils
 from synapseclient import File, Folder
 from .utilities import get_settings_annotations
+from pprint import pprint
 
 
 class Loader(object):
@@ -14,6 +15,7 @@ class Loader(object):
         if settings_path:
             with open(settings_path) as f:
                 self.s = json.load(f)
+        pprint(self.s)
 
     def get_processor_from_settings(self):
         settings = self.s
