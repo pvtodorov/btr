@@ -30,16 +30,24 @@ class Loader(object):
     def save_settings_to_synapse(self, settings_path):
         """Saves prediction to Synapse"""
         self._syn = synapseclient.login()
-        dirpath = 'run_settings/'
-        filename = settings_path.split('/')[-1]
-        parent = get_or_create_syn_folder(self._syn,
-                                          dirpath,
-                                          self.s['project_synid'])
-        file = File(path=dirpath + filename, parent=parent)
-        annotations = {'btr_file_type': 'settings',
-                       'settings_md5': get_settings_md5(self.s)}
-        file.annotations = annotations
-        file = self._syn.store(file, forceVersion=False)
+        md5 = get_settings_md5(self.s)
+        query_str = 'SELECT * FROM file WHERE settings_md5==\"' + \
+                    md5 + '\" AND btr_file_type==\"settings\"'
+        q = self._syn.chunkedQuery(query_str)
+        qlist = [x for x in q]
+        if len(qlist) == 1:
+            return
+        else:
+            dirpath = 'run_settings/'
+            filename = settings_path.split('/')[-1]
+            parent = get_or_create_syn_folder(self._syn,
+                                              dirpath,
+                                              self.s['project_synid'])
+            file = File(path=dirpath + filename, parent=parent)
+            annotations = {'btr_file_type': 'settings',
+                           'settings_md5': get_settings_md5(md5)}
+            file.annotations = annotations
+            file = self._syn.store(file)
 
     def save_prediction_to_synapse(self):
         """Saves prediction to Synapse"""
