@@ -66,7 +66,8 @@ class LPOCV(Processor):
         """
         if gmt:
             self.gmt = gmt
-            for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols)):
+            for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols),
+                                              total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
         else:
             sampling_range = get_sampling_range(self.s)

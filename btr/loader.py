@@ -3,7 +3,8 @@ from .processing_schemes import LPOCV
 import synapseclient
 import synapseutils
 from synapseclient import File, Folder
-from .utilities import get_settings_annotations
+from .utilities import get_settings_annotations, get_settings_md5
+from pprint import pprint
 
 
 class Loader(object):
@@ -11,9 +12,12 @@ class Loader(object):
         self.s = None
         self.proc = None
         self._syn = None
-        if settings_path:
-            with open(settings_path) as f:
+        self._settings_path = settings_path
+        if self._settings_path:
+            with open(self._settings_path) as f:
                 self.s = json.load(f)
+                self.save_settings_to_synapse(self._settings_path)
+        pprint(self.s)
 
     def get_processor_from_settings(self):
         settings = self.s
@@ -22,6 +26,20 @@ class Loader(object):
             self.proc = LPOCV(settings=settings)
         else:
             raise NotImplementedError
+
+    def save_settings_to_synapse(self, settings_path):
+        """Saves prediction to Synapse"""
+        self._syn = synapseclient.login()
+        dirpath = 'run_settings/'
+        filename = settings_path.split('/')[-1]
+        parent = get_or_create_syn_folder(self._syn,
+                                          dirpath,
+                                          self.s['project_synid'])
+        file = File(path=dirpath + filename, parent=parent)
+        annotations = {'btr_file_type': 'settings',
+                       'settings_md5': get_settings_md5(self.s)}
+        file.annotations = annotations
+        file = self._syn.store(file, forceVersion=False)
 
     def save_prediction_to_synapse(self):
         """Saves prediction to Synapse"""
@@ -33,6 +51,7 @@ class Loader(object):
                                           self.s['project_synid'])
         file = File(path=dirpath + filename, parent=parent)
         annotations = get_settings_annotations(self.s)
+        annotations['btr_file_type'] = 'prediction'
         if 'background_predictions' in dirpath:
             annotations['prediction_type'] = 'background'
         elif "hypothesis_predictions" in dirpath:

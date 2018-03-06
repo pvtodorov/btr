@@ -70,7 +70,10 @@ def get_settings_annotations(settings):
     annotations['settings_md5'] = get_settings_md5(settings)
     annotations['dataset_name'] = settings['dataset']['name']
     annotations['dataset_filepath'] = settings['dataset']['filepath']
-    annotations['dataset_meta_columns'] = settings['dataset']['meta_columns']
+    annotations['dataset_meta_columns'] = \
+        "".join(json.dumps(settings['dataset']['meta_columns'],
+                           allow_nan=False,
+                           sort_keys=True))
     annotations['dataset_target'] = settings['dataset']['target']
     annotations['dataset_ID_column'] = settings['dataset']['ID_column']
     annotations['dataset_filter_name'] = json.dumps(False)
@@ -82,11 +85,12 @@ def get_settings_annotations(settings):
         for i, f in enumerate(settings['dataset']['filter']['filters']):
             annotations['dataset_filter_column_' + str(i)] = f['column']
             annotations['dataset_filter_values_' + str(i)] = \
-                "".join(json.dumps(f['values']))
+                json.dumps(f['values'], allow_nan=False, sort_keys=True)
     annotations['estimator_name'] = \
         settings['estimator']['name']
     annotations['estimator_params'] = \
-        "".join(json.dumps(settings['estimator']['estimator_params']).split())
+        json.dumps(settings['estimator']['estimator_params'],
+                   allow_nan=False, sort_keys=True)
     annotations["estimator_call"] = \
         settings["estimator"].get("call", "class")
     annotations['processing_scheme_name'] = \
@@ -99,8 +103,7 @@ def get_settings_annotations(settings):
         annotations['processing_scheme_pair_col'] = \
             settings['processing_scheme']['pair_col']
         annotations['processing_scheme_transform_labels'] = \
-            "".join(json.dumps(settings['processing_scheme']
-                                       ['transform_labels']))
+            json.dumps(settings['processing_scheme']['transform_labels'])
         annotations['processing_scheme_pair_settings_shuffle'] = \
             json.dumps(settings['processing_scheme']
                                ['pair_settings']
@@ -114,11 +117,7 @@ def get_settings_annotations(settings):
     annotations['background_params_intervals'] = \
         len(settings['background_params']['intervals'])
     for i, p in enumerate(settings['background_params']['intervals']):
-        annotations['background_params_interval_start_' + str(i)] = \
-            p['start']
-        annotations['background_params_interval_end_' + str(i)] = \
-            p['end']
-        annotations['background_params_interval_step_' + str(i)] = \
-            p['step']
+        annotations['background_params_interval_' + str(i)] = \
+            json.dumps(p, allow_nan=False, sort_keys=True)
     annotations['misc'] = "".join(json.dumps(settings['misc']))
     return annotations
