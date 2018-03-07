@@ -73,12 +73,48 @@ class Loader(object):
         file = self._syn.store(file)
 
 
-def get_or_create_syn_folder(syn, dirpath, project_synid):
+def get_synapse_dict(syn, project_synid):
+    walked = synapseutils.walk(syn, project_synid)
+    contents = [x for x in walked]
+    contents_dict = {}
+    project_name = contents[0][0][0]
+    contents_dict[''] = contents[0][0][1]
+    for c in contents:
+        base = c[0]
+        folders = c[1]
+        files = c[2]
+        for folder in folders:
+            folder_path = "/".join([base[0], folder[0], ''])
+            folder_path = folder_path.replace(project_name + '/', '')
+            syn_id = folder[1]
+            contents_dict[folder_path] = syn_id
+        for file in files:
+            file_path = "/".join([base[0], file[0]])
+            file_path = file_path.replace(project_name + '/', '')
+            syn_id = file[1]
+            contents_dict[file_path] = syn_id
+    return contents_dict
+
+
+def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10):
     dirs = [x for x in dirpath.split('/') if len(x) > 0]
-    parent_obj = syn.get(project_synid)
-    while len(dirs) > 0:
-        d = dirs.pop(0)
-        folder = Folder(d, parent=parent_obj)
-        folder = syn.store(folder)
-        parent_obj = folder
-    return parent_obj
+    parent_synid = project_synid
+    for d in dirs:
+        attempts = 1
+        while attempts <= max_attempts:
+            try:
+                folder = Folder(d, parent=parent_synid)
+                folder = syn.get(folder)
+                parent_synid = folder.id
+                break
+            except TypeError:
+                try:
+                    print('folder ' + d + ' not found. attempting to create')
+                    folder = syn.store(folder)
+                    parent_synid = folder.id
+                    break
+                except synapseclient.exceptions.SynapseHTTPError:
+                    print('SynapseHTTPError. Retrying. Attempt ' + attempts)
+                    attempts += 1
+                    continue
+    return parent_synid
