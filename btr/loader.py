@@ -96,7 +96,8 @@ def get_synapse_dict(syn, project_synid):
     return contents_dict
 
 
-def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10):
+def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10,
+                             create=True):
     dirs = [x for x in dirpath.split('/') if len(x) > 0]
     parent_synid = project_synid
     for d in dirs:
@@ -110,9 +111,12 @@ def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10):
             except TypeError:
                 try:
                     print('folder ' + d + ' not found. attempting to create')
-                    folder = syn.store(folder)
-                    parent_synid = folder.id
-                    break
+                    if create:
+                        folder = syn.store(folder)
+                        parent_synid = folder.id
+                        break
+                    else:
+                        print('create set to False. folder not created.')
                 except synapseclient.exceptions.SynapseHTTPError:
                     print('SynapseHTTPError. Retrying. Attempt ' + attempts)
                     attempts += 1
