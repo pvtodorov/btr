@@ -47,7 +47,7 @@ class Loader(object):
             annotations = {'btr_file_type': 'settings',
                            'settings_md5': get_settings_md5(md5)}
             file.annotations = annotations
-            file = self._syn.store(file)
+            file = get_or_create_syn_entity(file, self._syn)
 
     def save_prediction_to_synapse(self):
         """Saves prediction to Synapse"""
@@ -96,25 +96,37 @@ def get_synapse_dict(syn, project_synid):
     return contents_dict
 
 
-def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10):
+def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10,
+                             create=True):
     dirs = [x for x in dirpath.split('/') if len(x) > 0]
-    parent_synid = project_synid
+    folder_synid = project_synid
     for d in dirs:
-        attempts = 1
-        while attempts <= max_attempts:
+        folder = Folder(d, parent=folder_synid)
+        folder_synid = get_or_create_syn_entity(folder, syn)
+    return folder_synid
+
+
+def get_or_create_syn_entity(entity, syn, max_attempts=10, create=True):
+    attempts = 1
+    while attempts <= max_attempts:
+        try:
+            print('Attempting to get entity "' + entity.name + '".')
+            entity = syn.get(entity)
+            entity_synid = entity.id
+            break
+        except TypeError:
+            print('Entity "' + entity.name + '" not found.')
             try:
-                folder = Folder(d, parent=parent_synid)
-                folder = syn.get(folder)
-                parent_synid = folder.id
-                break
-            except TypeError:
-                try:
-                    print('folder ' + d + ' not found. attempting to create')
-                    folder = syn.store(folder)
-                    parent_synid = folder.id
+                print('Attempting to create entity.')
+                if create:
+                    entity = syn.store(entity)
+                    entity_synid = entity.id
                     break
-                except synapseclient.exceptions.SynapseHTTPError:
-                    print('SynapseHTTPError. Retrying. Attempt ' + attempts)
-                    attempts += 1
-                    continue
-    return parent_synid
+                else:
+                    print('Create set to False. folder not created.')
+                    break
+            except synapseclient.exceptions.SynapseHTTPError:
+                print('SynapseHTTPError. Retrying. Attempt ' + attempts)
+                attempts += 1
+                continue
+    return entity_synid

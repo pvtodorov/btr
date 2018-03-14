@@ -3,11 +3,15 @@ from tqdm import tqdm
 import argparse
 import json
 import os
-from .utilities import (recursivedict, get_outdir_path, digitize_labels)
+from .utilities import (recursivedict, get_outdir_path, digitize_labels,
+                        check_or_create_dir, get_settings_annotations)
 from .dataset import Dataset
 from .gmt import GMT
 import numpy as np
 from statsmodels.sandbox.stats.multicomp import multipletests
+from .loader import get_or_create_syn_folder, get_or_create_syn_entity
+import synapseclient
+from synapseclient import File
 
 
 class Scorer(object):
@@ -43,13 +47,26 @@ class Scorer(object):
     def score_LPOCV(self, gmt_path=None):
         outfolder = get_outdir_path(self.s)
         if gmt_path:
-            outfolder += 'geneset_predictions/'
+            outfolder += 'hypothesis_predictions/'
+            check_or_create_dir(outfolder)
             gmt = GMT(gmt_path)
             bg_runs = [gmt.suffix + '.csv']
         else:
             outfolder += 'background_predictions/'
+            check_or_create_dir(outfolder)
             bg_runs = os.listdir(outfolder)
             bg_runs = [x for x in bg_runs if '.csv' in x]
+        syn = synapseclient.login()
+        folder_synid = get_or_create_syn_folder(syn,
+                                                outfolder,
+                                                self.s['project_synid'],
+                                                create=False)
+        q = syn.chunkedQuery('SELECT * FROM file WHERE parentId==\"' +
+                             folder_synid + '\"')
+        qlist = [x for x in q]
+        for f in qlist:
+            syn.get(f['file.id'], downloadLocation=outfolder,
+                    ifcollision="overwrite.local")
         auc_dict_list = []
         for fn in tqdm(bg_runs):
             df = pd.read_csv(outfolder + fn)
@@ -87,22 +104,45 @@ class Scorer(object):
             auc_df = auc_df.rename(columns={a: int(a) for a in cols})
         cols = auc_df.columns.tolist()
         auc_df = auc_df[list(sorted(cols))]
+        outfolder = "/".join(outfolder.split('/')[:-2] + ['score', ''])
+        check_or_create_dir(outfolder)
+        folder_synid = get_or_create_syn_folder(syn,
+                                                outfolder,
+                                                self.s['project_synid'])
+        annotations = get_settings_annotations(self.s)
+        annotations['btr_file_type'] = 'score'
+        annotations['score_metric'] = 'AUC'
         if gmt_path:
-            auc_df.to_csv(outfolder + '../' + gmt.suffix + '_auc.csv',
-                          index=False)
+            filepath = outfolder + gmt.suffix + '_auc.csv'
+            annotations['score_type'] = 'hypothesis'
         else:
-            auc_df.to_csv(outfolder + '../' + 'background_auc.csv',
-                          index=False)
+            filepath = outfolder + 'background_auc.csv'
+            annotations['score_type'] = 'hypothesis'
+        auc_df.to_csv(filepath, index=False)
+        file = File(path=filepath, parent=folder_synid)
+        file.annotations = annotations
+        file = get_or_create_syn_entity(file, syn)
 
     def get_stats(self, gmt_path):
-        folder = get_outdir_path(self.s)
+        folder = get_outdir_path(self.s) + 'score/'
+        check_or_create_dir(folder)
+        syn = synapseclient.login()
+        folder_synid = get_or_create_syn_folder(syn,
+                                                folder,
+                                                self.s['project_synid'],
+                                                create=True)
+        q = syn.chunkedQuery('SELECT * FROM file WHERE parentId==\"' +
+                             folder_synid + '\"')
+        qlist = [x for x in q]
+        for f in qlist:
+            syn.get(f['file.id'], downloadLocation=folder,
+                    ifcollision="overwrite.local")
         gmt = GMT(gmt_path)
         dataset = Dataset(self.s)
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
         background = pd.read_csv(folder + 'background_auc.csv')
         bcg_cols = background.columns.tolist()
         bcg_cols = [int(x) for x in bcg_cols]
-
         d_cols = dataset.data_cols
         scores = []
         for link, desc, g_list, m_list in gmt.generate(dataset_genes=d_cols):
@@ -133,21 +173,44 @@ class Scorer(object):
 
         df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
                                'AUC', 'p_value', 'adjusted_p']]
-        df_scores.to_csv(folder + gmt.suffix + '_stats.csv', index=False)
+        folder = "/".join(folder.split('/')[:-2] + ['stats', ''])
+        check_or_create_dir(folder)
+        folder_synid = get_or_create_syn_folder(syn,
+                                                folder,
+                                                self.s['project_synid'],
+                                                create=True)
+        filepath = folder + gmt.suffix + '_stats.csv'
+        df_scores.to_csv(filepath, index=False)
+        annotations = get_settings_annotations(self.s)
+        annotations['btr_file_type'] = 'score'
+        annotations['score_metric'] = 'AUC'
+        file = File(path=filepath, parent=folder_synid)
+        file.annotations = annotations
+        file = get_or_create_syn_entity(file, syn)
 
 
-if __name__ == '__main__':
+def stats_main():
     parser = argparse.ArgumentParser()
     parser.add_argument("settings_path", help="settings as JSON")
     parser.add_argument("-g", "--gmt_path",
                         help="path to file or folder of txts", required=False)
-    argument = parser.parse_args()
     args = parser.parse_args()
     settings_path = args.settings_path
     gmt_path = args.gmt_path
-    gmt = None
-    if gmt_path:
-        gmt = GMT(gmt_path)
+    scorer = Scorer()
+    scorer.from_settings(settings_path)
+    scorer.score_LPOCV(gmt_path=gmt_path)
+    scorer.get_stats(gmt_path=gmt_path)
+
+
+def score_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("settings_path", help="settings as JSON")
+    parser.add_argument("-g", "--gmt_path",
+                        help="path to file or folder of txts", required=False)
+    args = parser.parse_args()
+    settings_path = args.settings_path
+    gmt_path = args.gmt_path
     scorer = Scorer()
     scorer.from_settings(settings_path)
     scorer.score_LPOCV(gmt_path=gmt_path)

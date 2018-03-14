@@ -11,8 +11,8 @@ setup(name='btr',
       zip_safe=False,
       entry_points={
           'console_scripts': ['btr-predict=btr.predict:main',
-                              'btr-score=btr.command_line:score_main',
-                              'btr-stats=btr.command_line:stats_main']},
+                              'btr-score=btr.score:score_main',
+                              'btr-stats=btr.score:stats_main']},
       install_requires=[
           'mord', 'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
           'scikit-learn', 'scipy', 'six', 'sklearn', 'statsmodels', 'tqdm',
