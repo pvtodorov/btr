@@ -9,7 +9,7 @@ from .dataset import Dataset
 from .gmt import GMT
 import numpy as np
 from statsmodels.sandbox.stats.multicomp import multipletests
-from .loader import get_or_create_syn_folder
+from .loader import get_or_create_syn_folder, get_or_create_syn_entity
 import synapseclient
 from synapseclient import File
 
@@ -114,18 +114,14 @@ class Scorer(object):
         annotations['score_metric'] = 'AUC'
         if gmt_path:
             filepath = outfolder + gmt.suffix + '_auc.csv'
-            auc_df.to_csv(filepath, index=False)
             annotations['score_type'] = 'hypothesis'
-            file = File(path=filepath, parent=folder_synid)
-            file.annotations = annotations
-            file = syn.store(file)
         else:
             filepath = outfolder + 'background_auc.csv'
-            auc_df.to_csv(filepath, index=False)
             annotations['score_type'] = 'hypothesis'
-            file = File(path=filepath, parent=folder_synid)
-            file.annotations = annotations
-            file = syn.store(file)
+        auc_df.to_csv(filepath, index=False)
+        file = File(path=filepath, parent=folder_synid)
+        file.annotations = annotations
+        file = get_or_create_syn_entity(file, syn)
 
     def get_stats(self, gmt_path):
         folder = get_outdir_path(self.s) + 'score/'
@@ -190,7 +186,7 @@ class Scorer(object):
         annotations['score_metric'] = 'AUC'
         file = File(path=filepath, parent=folder_synid)
         file.annotations = annotations
-        file = syn.store(file)
+        file = get_or_create_syn_entity(file, syn)
 
 
 def stats_main():
