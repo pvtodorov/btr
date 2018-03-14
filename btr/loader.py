@@ -117,6 +117,7 @@ def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10,
                         break
                     else:
                         print('create set to False. folder not created.')
+                        break
                 except synapseclient.exceptions.SynapseHTTPError:
                     print('SynapseHTTPError. Retrying. Attempt ' + attempts)
                     attempts += 1
