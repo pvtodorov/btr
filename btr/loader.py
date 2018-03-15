@@ -36,7 +36,7 @@ class Loader(object):
                                           self.s['project_synid'])
         localfile = File(path=settings_path, parent=parent)
         remotefile = get_or_create_syn_entity(localfile, self._syn,
-                                              overwrite=overwrite,
+                                              skipget=False,
                                               returnid=False)
         md5 = get_settings_md5(self.s)
         if [md5] == remotefile.annotations.get('settings_md5'):
@@ -50,7 +50,7 @@ class Loader(object):
                                'settings_md5': md5}
                 file.annotations = annotations
                 file = get_or_create_syn_entity(file, self._syn,
-                                                overwrite=overwrite)
+                                                skipget=overwrite)
             else:
                 print('Overwrite disabled. Remote unchanged. Local unchanged.')
                 raise synapseclient.exceptions.SynapseError
@@ -76,7 +76,9 @@ class Loader(object):
         if gmt:
             annotations['gmt'] = gmt.suffix
         file.annotations = annotations
-        file = self._syn.store(file)
+        file = get_or_create_syn_entity(file, self._syn,
+                                        skipget=False,
+                                        returnid=False)
 
 
 def get_synapse_dict(syn, project_synid):
@@ -113,20 +115,20 @@ def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10,
 
 
 def get_or_create_syn_entity(entity, syn, max_attempts=10,
-                             create=True, overwrite=False, returnid=True):
+                             create=True, skipget=False, returnid=True):
     attempts = 1
     while attempts <= max_attempts:
         try:
-            if overwrite:
-                print('Write or overwrite file.')
+            if skipget:
+                print('Writing without checking for entity.')
                 raise TypeError
             else:
                 print('Attempting to get entity "' + entity.name + '".')
                 entity = syn.get(entity)
                 entity_synid = entity.id
+                print('Entity "' + entity.name + '" found.')
                 break
         except TypeError:
-            print('Entity "' + entity.name + '" not found / overwrite.')
             try:
                 print('Attempting to create entity.')
                 if create:
