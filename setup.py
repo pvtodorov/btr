@@ -16,6 +16,6 @@ setup(name='btr',
       install_requires=[
           'mord', 'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
           'scikit-learn', 'scipy', 'six', 'sklearn', 'statsmodels', 'tqdm',
-          'synapseclient'
+          'synapseclient', 'nose2'
       ]
       )
