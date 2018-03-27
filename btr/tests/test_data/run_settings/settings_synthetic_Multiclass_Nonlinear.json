@@ -1,15 +1,12 @@
 {
-    "dataset":{"name": "MSBB_RNAseq",
-               "filepath": "~/Data/AMP-AD/MSBB/msbb-wrangled.tsv",
+    "dataset":{"name": "synthetic_test_data",
+               "filepath": "~/Code/btr/btr/tests/test_data/synthetic.tsv",
                "meta_columns": ["ID", "PMI", "AOD", "CDR", "Braak", "BrodmannArea", "Barcode"],
                "target": "Braak",
                "ID_column": "ID"
               },
     "estimator": {"name": "Multiclass_Nonlinear",
-                  "estimator_params":{"n_estimators": 100,
-                                      "max_features": "sqrt",
-                                      "max_depth": null
-                                     }
+                  "estimator_params":{}
                  },
     "processing_scheme": {"name": "LPOCV",
                           "subset_col": "BrodmannArea",
@@ -19,11 +16,10 @@
                           "pair_settings" : {"shuffle": true,
                                              "seed": 47,
                                              "sample_once": false
-                                            }
+                          }
                          },
-    "background_params": {"intervals": [{"step": 10, "start": 10, "end": 500},
-                                        {"step": 100, "start": 500, "end": 1000}]
+    "background_params": {"intervals": [{"step": 10, "start": 10, "end": 100}]
                          },
     "misc": {},
-    "project_synid": "syn11615746"
+    "project_synid": "syn11974673"
 }
