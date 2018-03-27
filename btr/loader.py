@@ -8,16 +8,19 @@ from pprint import pprint
 
 
 class Loader(object):
-    def __init__(self, settings_path=None, syn_settings_overwrite=False):
+    def __init__(self, settings_path=None,
+                 use_synapse=True, syn_settings_overwrite=False):
         self.s = None
         self.proc = None
-        self._syn = None
         self._settings_path = settings_path
         if self._settings_path:
             with open(self._settings_path) as f:
                 self.s = json.load(f)
-                self.save_settings_to_synapse(self._settings_path,
-                                              overwrite=syn_settings_overwrite)
+        self._syn = None
+        if use_synapse:
+            self._syn = synapseclient.login()
+            self.save_settings_to_synapse(self._settings_path,
+                                          overwrite=syn_settings_overwrite)
         pprint(self.s)
 
     def get_processor_from_settings(self):
@@ -30,7 +33,9 @@ class Loader(object):
 
     def save_settings_to_synapse(self, settings_path, overwrite=False):
         """Saves prediction to Synapse"""
-        self._syn = synapseclient.login()
+        if not self._syn:
+            print('Not logged into synapse.')
+            return
         parent = get_or_create_syn_folder(self._syn,
                                           'run_settings/',
                                           self.s['project_synid'])
@@ -57,7 +62,9 @@ class Loader(object):
 
     def save_prediction_to_synapse(self):
         """Saves prediction to Synapse"""
-        self._syn = synapseclient.login()
+        if not self._syn:
+            print('Not logged into synapse')
+            return
         dirpath = self.proc._outdir_path
         filename = self.proc._outfile_name
         parent = get_or_create_syn_folder(self._syn,
