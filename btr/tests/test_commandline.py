@@ -53,3 +53,4 @@ def test_score_values_synthetic():
         assert df_dict['NS_cols.txt'] < df_dict['ABCeasy_cols.txt']
         assert df_dict['NS_cols.txt'] < df_dict['ABChard_cols.txt']
         assert df_dict['NS_cols.txt'] < df_dict['BACeasy_cols.txt']
+        assert df_dict['NS_cols.txt'] < 0.6
