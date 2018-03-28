@@ -4,3 +4,7 @@
 btr\.egg-info/
 
 btr/__pycache__/
+
+btr/tests/__pycache__/
+
+btr/tests/Runs/

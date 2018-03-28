@@ -121,7 +121,7 @@ class Scorer(object):
         auc_df.to_csv(filepath, index=False)
         file = File(path=filepath, parent=folder_synid)
         file.annotations = annotations
-        file = get_or_create_syn_entity(file, syn)
+        file = get_or_create_syn_entity(file, syn, skipget=True)
 
     def get_stats(self, gmt_path):
         folder = get_outdir_path(self.s) + 'score/'
@@ -186,7 +186,7 @@ class Scorer(object):
         annotations['score_metric'] = 'AUC'
         file = File(path=filepath, parent=folder_synid)
         file.annotations = annotations
-        file = get_or_create_syn_entity(file, syn)
+        file = get_or_create_syn_entity(file, syn, skipget=True)
 
 
 def stats_main():

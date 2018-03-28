@@ -8,15 +8,19 @@ from pprint import pprint
 
 
 class Loader(object):
-    def __init__(self, settings_path=None):
+    def __init__(self, settings_path=None,
+                 use_synapse=True, syn_settings_overwrite=False):
         self.s = None
         self.proc = None
-        self._syn = None
         self._settings_path = settings_path
         if self._settings_path:
             with open(self._settings_path) as f:
                 self.s = json.load(f)
-                self.save_settings_to_synapse(self._settings_path)
+        self._syn = None
+        if use_synapse:
+            self._syn = synapseclient.login()
+            self.save_settings_to_synapse(self._settings_path,
+                                          overwrite=syn_settings_overwrite)
         pprint(self.s)
 
     def get_processor_from_settings(self):
@@ -27,31 +31,40 @@ class Loader(object):
         else:
             raise NotImplementedError
 
-    def save_settings_to_synapse(self, settings_path):
+    def save_settings_to_synapse(self, settings_path, overwrite=False):
         """Saves prediction to Synapse"""
-        self._syn = synapseclient.login()
-        md5 = get_settings_md5(self.s)
-        query_str = 'SELECT * FROM file WHERE settings_md5==\"' + \
-                    md5 + '\" AND btr_file_type==\"settings\"'
-        q = self._syn.chunkedQuery(query_str)
-        qlist = [x for x in q]
-        if len(qlist) == 1:
+        if not self._syn:
+            print('Not logged into synapse.')
             return
+        parent = get_or_create_syn_folder(self._syn,
+                                          'run_settings/',
+                                          self.s['project_synid'])
+        localfile = File(path=settings_path, parent=parent)
+        remotefile = get_or_create_syn_entity(localfile, self._syn,
+                                              skipget=False,
+                                              returnid=False)
+        md5 = get_settings_md5(self.s)
+        if [md5] == remotefile.annotations.get('settings_md5'):
+            print('Local settings file and remote have the same md5 hashes.')
         else:
-            dirpath = 'run_settings/'
-            filename = settings_path.split('/')[-1]
-            parent = get_or_create_syn_folder(self._syn,
-                                              dirpath,
-                                              self.s['project_synid'])
-            file = File(path=dirpath + filename, parent=parent)
-            annotations = {'btr_file_type': 'settings',
-                           'settings_md5': get_settings_md5(md5)}
-            file.annotations = annotations
-            file = get_or_create_syn_entity(file, self._syn)
+            print('Local settings file and remote have DIFFERENT md5 hashes.')
+            if overwrite:
+                print('Overwriting remote.')
+                file = self._syn.store(localfile)
+                annotations = {'btr_file_type': 'settings',
+                               'settings_md5': md5}
+                file.annotations = annotations
+                file = get_or_create_syn_entity(file, self._syn,
+                                                skipget=overwrite)
+            else:
+                print('Overwrite disabled. Remote unchanged. Local unchanged.')
+                raise synapseclient.exceptions.SynapseError
 
     def save_prediction_to_synapse(self):
         """Saves prediction to Synapse"""
-        self._syn = synapseclient.login()
+        if not self._syn:
+            print('Not logged into synapse')
+            return
         dirpath = self.proc._outdir_path
         filename = self.proc._outfile_name
         parent = get_or_create_syn_folder(self._syn,
@@ -70,7 +83,9 @@ class Loader(object):
         if gmt:
             annotations['gmt'] = gmt.suffix
         file.annotations = annotations
-        file = self._syn.store(file)
+        file = get_or_create_syn_entity(file, self._syn,
+                                        skipget=False,
+                                        returnid=False)
 
 
 def get_synapse_dict(syn, project_synid):
@@ -106,16 +121,21 @@ def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10,
     return folder_synid
 
 
-def get_or_create_syn_entity(entity, syn, max_attempts=10, create=True):
+def get_or_create_syn_entity(entity, syn, max_attempts=10,
+                             create=True, skipget=False, returnid=True):
     attempts = 1
     while attempts <= max_attempts:
         try:
-            print('Attempting to get entity "' + entity.name + '".')
-            entity = syn.get(entity)
-            entity_synid = entity.id
-            break
+            if skipget:
+                print('Writing without checking for entity.')
+                raise TypeError
+            else:
+                print('Attempting to get entity "' + entity.name + '".')
+                entity = syn.get(entity)
+                entity_synid = entity.id
+                print('Entity "' + entity.name + '" found.')
+                break
         except TypeError:
-            print('Entity "' + entity.name + '" not found.')
             try:
                 print('Attempting to create entity.')
                 if create:
@@ -123,10 +143,13 @@ def get_or_create_syn_entity(entity, syn, max_attempts=10, create=True):
                     entity_synid = entity.id
                     break
                 else:
-                    print('Create set to False. folder not created.')
+                    print('Create set to False. Entity not created.')
                     break
             except synapseclient.exceptions.SynapseHTTPError:
                 print('SynapseHTTPError. Retrying. Attempt ' + attempts)
                 attempts += 1
                 continue
-    return entity_synid
+    if returnid:
+        return entity_synid
+    else:
+        return entity
