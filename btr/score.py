@@ -115,6 +115,7 @@ class Scorer(object):
         if gmt_path:
             filepath = outfolder + gmt.suffix + '_auc.csv'
             annotations['score_type'] = 'hypothesis'
+            annotations['gmt'] = gmt.suffix
         else:
             filepath = outfolder + 'background_auc.csv'
             annotations['score_type'] = 'hypothesis'
@@ -182,8 +183,9 @@ class Scorer(object):
         filepath = folder + gmt.suffix + '_stats.csv'
         df_scores.to_csv(filepath, index=False)
         annotations = get_settings_annotations(self.s)
-        annotations['btr_file_type'] = 'score'
+        annotations['btr_file_type'] = 'stats'
         annotations['score_metric'] = 'AUC'
+        annotations['gmt'] = gmt.suffix
         file = File(path=filepath, parent=folder_synid)
         file.annotations = annotations
         file = get_or_create_syn_entity(file, syn, skipget=True)
