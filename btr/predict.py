@@ -13,11 +13,18 @@ def main():
     parser.add_argument("-o", "--overwrite_settings",
                         help="path to file or folder of txts", required=False,
                         action='store_true')
+    parser.add_argument("-ns", "--skip_synapse",
+                        help="path to file or folder of txts", required=False,
+                        action='store_true')
     args = parser.parse_args()
     settings_path = args.settings_path
     iterations = int(args.iterations)
     overwrite_settings = args.overwrite_settings
     gmt_path = args.gmt_path
+    skip_synapse = args.skip_synapse
+    use_synapse = True
+    if skip_synapse:
+        use_synapse = False
     gmt = None
     for i in range(0, iterations):
         if gmt_path:

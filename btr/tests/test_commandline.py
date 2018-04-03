@@ -14,7 +14,7 @@ def test_predict_synthetic():
         s = run(['btr-predict',
                  s,
                  '-g', 'test_data/hypotheses/synthetic/',
-                 '-o'],
+                 '-ns'],
                 stdout=PIPE,
                 stderr=STDOUT)
         assert s.returncode == 0
