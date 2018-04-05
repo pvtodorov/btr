@@ -11,20 +11,38 @@ from pprint import pprint
 
 
 class Loader(object):
-    def __init__(self, settings_path=None,
-                 use_synapse=True, syn_settings_overwrite=False):
-        self.s = None
+    def __init__(self,
+                 settings_path=None, gmt_path=None,
+                 use_synapse=True, syn_settings_overwrite=False,
+                 pprint_settings=False):
+        self.settings = None
+        self.dataset = None
         self.proc = None
-        self._settings_path = settings_path
-        if self._settings_path:
-            with open(self._settings_path) as f:
-                self.s = json.load(f)
-        self._syn = None
+        self.estimator = None
+        self.gmt = None
+        self.syn = None
+        self.settings_path = settings_path
+        self.gmt_path = gmt_path
+        # if a settings_path is provided, automatically load settings
+        if self.settings_path:
+            self.load_settings(self.settings_path)
+        # if use_synapse True, automatically login
         if use_synapse:
-            self._syn = synapseclient.login()
-            self.save_settings_to_synapse(self._settings_path,
+            self.syn = synapseclient.login()
+            self.save_settings_to_synapse(self.settings_path,
                                           overwrite=syn_settings_overwrite)
-        pprint(self.s)
+        if pprint_settings:
+            pprint(self.s)
+
+    def load_settings(self, settings_path):
+        with open(self.settings_path) as f:
+            self.settings = json.load(f)
+
+    def load_gmt(self, gmt_path):
+        self.gmt = GMT(gmt_path)
+
+    def load_dataset(self):
+        self.dataset = Dataset(self.settings)
 
     def get_processor_from_settings(self):
         settings = self.s
@@ -36,14 +54,14 @@ class Loader(object):
 
     def save_settings_to_synapse(self, settings_path, overwrite=False):
         """Saves prediction to Synapse"""
-        if not self._syn:
+        if not self.syn:
             print('Not logged into synapse.')
             return
-        parent = get_or_create_syn_folder(self._syn,
+        parent = get_or_create_syn_folder(self.syn,
                                           'run_settings/',
                                           self.s['project_synid'])
         localfile = File(path=settings_path, parent=parent)
-        remotefile = get_or_create_syn_entity(localfile, self._syn,
+        remotefile = get_or_create_syn_entity(localfile, self.syn,
                                               skipget=False,
                                               returnid=False)
         md5 = get_settings_md5(self.s)
@@ -53,11 +71,11 @@ class Loader(object):
             print('Local settings file and remote have DIFFERENT md5 hashes.')
             if overwrite:
                 print('Overwriting remote.')
-                file = self._syn.store(localfile)
+                file = self.syn.store(localfile)
                 annotations = {'btr_file_type': 'settings',
                                'settings_md5': md5}
                 file.annotations = annotations
-                file = get_or_create_syn_entity(file, self._syn,
+                file = get_or_create_syn_entity(file, self.syn,
                                                 skipget=overwrite)
             else:
                 print('Overwrite disabled. Remote unchanged. Local unchanged.')
@@ -65,12 +83,12 @@ class Loader(object):
 
     def save_prediction_to_synapse(self):
         """Saves prediction to Synapse"""
-        if not self._syn:
+        if not self.syn:
             print('Not logged into synapse')
             return
         dirpath = self.proc._outdir_path
         filename = self.proc._outfile_name
-        parent = get_or_create_syn_folder(self._syn,
+        parent = get_or_create_syn_folder(self.syn,
                                           dirpath,
                                           self.s['project_synid'])
         file = File(path=dirpath + filename, parent=parent)
