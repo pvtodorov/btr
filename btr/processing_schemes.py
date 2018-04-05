@@ -23,16 +23,6 @@ class Processor(object):
         if estimator:
             self.e = estimator
 
-    def from_settings(self, settings_path=None):
-        """Gives the Processor the Dataset and Estimator from settings"""
-        if settings_path:
-            with open(settings_path) as f:
-                settings = json.load(f)
-            self.s = settings
-        if self.s:
-            self.d = Dataset(self.s)
-            self.e = get_estimator(self.s)
-
 
 class LPOCV(Processor):
     """Leave-Pair-Out Cross-Validation scheme
