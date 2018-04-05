@@ -4,9 +4,6 @@ from tqdm import tqdm
 from itertools import combinations
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
                         get_outfile_name, digitize_labels)
-import json
-from .dataset import Dataset
-from .estimators import get_estimator
 
 
 class Processor(object):

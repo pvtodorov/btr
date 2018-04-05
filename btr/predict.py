@@ -1,6 +1,4 @@
-import argparse
 from .loader import Loader
-from .gmt import GMT
 
 
 def main():

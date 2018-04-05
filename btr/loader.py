@@ -4,6 +4,9 @@ import synapseclient
 import synapseutils
 from synapseclient import File, Folder
 from .utilities import get_settings_annotations, get_settings_md5
+from .gmt import GMT
+from .dataset import Dataset
+from .estimators import get_estimator
 from pprint import pprint
 
 

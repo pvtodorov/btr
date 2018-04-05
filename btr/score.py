@@ -1,17 +1,8 @@
 import pandas as pd
 from tqdm import tqdm
-import argparse
-import json
 import os
-from .utilities import (recursivedict, get_outdir_path, digitize_labels,
-                        check_or_create_dir, get_settings_annotations)
-from .dataset import Dataset
-from .gmt import GMT
 import numpy as np
 from statsmodels.sandbox.stats.multicomp import multipletests
-from .loader import get_or_create_syn_folder, get_or_create_syn_entity
-import synapseclient
-from synapseclient import File
 
 
 class Scorer(object):
