@@ -13,9 +13,9 @@ class Processor(object):
     """
 
     def __init__(self, settings=None, dataset=None, estimator=None):
-        self.s = None
+        self.settings = None
         if settings:
-            self.s = settings
+            self.settings = settings
         self.d = None
         if dataset:
             self.d = dataset
@@ -41,7 +41,6 @@ class LPOCV(Processor):
         self.gmt = None
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
-        self._transform = settings["processing_scheme"].get("transform_labels")
         self._outdir_path = ''
         self._outfile_name = ''
 
@@ -57,7 +56,7 @@ class LPOCV(Processor):
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
         else:
-            sampling_range = get_sampling_range(self.s)
+            sampling_range = get_sampling_range(self.settings)
             for k in tqdm(sampling_range):
                 gene_list = self.d.sample_data_cols(k)
                 self._build_bcg_predictions(gene_list, k)
@@ -69,7 +68,7 @@ class LPOCV(Processor):
         Random gene set predictions are placed in `background_predictions/`
         Gene set predictions are place in `hypothesis_predictions/`
         """
-        self._outdir_path = get_outdir_path(self.s)
+        self._outdir_path = get_outdir_path(self.settings)
         if self.gmt:
             self._outdir_path += 'hypothesis_predictions/'
         else:
@@ -88,18 +87,19 @@ class LPOCV(Processor):
         features. In the case where a feature set is supplied via `gmt`, `k`
         corresponds to `gmt.suffix`
         """
-        self._get_pairs(**self.s["processing_scheme"]["pair_settings"])
+        self._get_pairs(**self.settings["processing_scheme"]["pair_settings"])
         for pair_index, pair in enumerate(tqdm(self.selected_pairs)):
+                tf = self.settings["processing_scheme"].get("transform_labels")
                 pair_ids = (pair[0][0], pair[1][0])
                 train_test_list = self.d.get_X_y(pair_ids,
                                                  selected_cols=selected_cols)
                 X_train, y_train, X_test, _ = train_test_list
                 y_train = [int(x) for x in y_train]
                 y_train = np.array(y_train)
-                y_train = digitize_labels(y_train, self._transform)
+                y_train = digitize_labels(y_train, tf)
                 e = self.e
                 e = e.fit(X_train, y_train)
-                if self.s["estimator"].get("call") == "probability":
+                if self.settings["estimator"].get("call") == "probability":
                     predictions = e.predict_proba(X_test)[:, 1]
                 else:
                     predictions = e.predict(X_test)
@@ -130,16 +130,16 @@ class LPOCV(Processor):
         - creates all possible pairs of samples
         """
         dataset = self.d
-        settings = self.s
-        transform = self._transform
+        settings = self.settings
+        tf = settings["processing_scheme"].get("transform_labels")
         subset_column = settings["processing_scheme"]["subset_col"]
         subset = settings["processing_scheme"]["subset"]
         df = dataset.data
         df_f = df[df[subset_column] == subset]
         ids_list = df_f[dataset.id_col].tolist()
         splits_list = df_f[dataset.target].tolist()
-        if transform:
-            splits_list = digitize_labels(splits_list, transform)
+        if tf:
+            splits_list = digitize_labels(splits_list, tf)
         samples = [(x, y) for x, y in
                    zip(ids_list, splits_list)]
         samples = sorted(samples, key=lambda x: x[1])
