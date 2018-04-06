@@ -1,7 +1,6 @@
 import uuid
 import os
 from collections import defaultdict
-import numpy as np
 import json
 import subprocess
 import importlib
@@ -48,13 +47,6 @@ def get_outfile_name(gmt=None):
     outfile_name = outfile_name + '.csv'
     print('outfile name: ' + outfile_name)
     return outfile_name
-
-
-def digitize_labels(y, transform_thresholds):
-    """ Take Braak scores and digitize them according to thresholds
-    """
-    y_bin = np.digitize(y, transform_thresholds) - 1
-    return y_bin
 
 
 def get_settings_annotations(settings):

@@ -3,37 +3,19 @@ import numpy as np
 
 
 class Dataset(object):
-    def __init__(self, settings):
-        try:
-            d_settings = settings['dataset']
-        except KeyError:
-            print('passed settings do not have "dataset" key')
-        self.name = d_settings['name']
-        self.filepath = d_settings['filepath']
-        self.meta_cols = d_settings['meta_columns']
-        self.target = d_settings['target']
-        self.id_col = d_settings['ID_column']
+    def __init__(self, settings, usecols=None):
+        self.settings = settings
+        self.name = self.settings['dataset']['name']
+        self.filepath = self.settings['dataset']['filepath']
+        self.meta_cols = self.settings['dataset']['meta_columns']
+        self.target = self.settings['dataset']['target']
+        self.id_col = self.settings['dataset']['ID_column']
         self.data_cols = []
         self.data = pd.DataFrame()
-        self._load_data()
+        self._load_data(usecols=usecols)
         self._get_data_cols()
-        self.filter_dataset(settings)
-
-    def _get_data_cols(self):
-        """ Given a dataframe and its meta columns, get back a list of the data
-        columns from the dataframe.
-        """
-        df = self.data
-        cols = df.columns.tolist()
-        data_cols = [x for x in cols if x not in self.meta_cols]
-        self.data_cols = data_cols
-
-    def _load_data(self):
-        """ Load dataframe from supplied path. Drop any rows with NaNs.
-        """
-        df = pd.read_table(self.filepath)
-        df = df.dropna(axis=0, how='any')
-        self.data = df
+        self._filter_dataset(settings)
+        self._transform_dataset(settings)
 
     def sample_data_cols(self, k):
         """ Select a random sample of k-items from a list of columns.
@@ -44,7 +26,7 @@ class Dataset(object):
 
     def get_X_y(self, test_ids, column=None, selected_cols=None):
         """ Given a dataframe, a target col, and a sample of data column names,
-        generate X, an numpy array of the data, and y, a list of target values
+        generate X, a numpy array of the data, and y, a list of target values
         corresponding to each row.
         """
         df = self.data
@@ -61,24 +43,52 @@ class Dataset(object):
         y_test = df_test[self.target].tolist()
         return X_train, y_train, X_test, y_test
 
-    def filter_dataset(self, settings):
+    def _load_data(self, usecols=None):
+        """ Load dataframe from supplied path. Drop any rows with NaNs.
+        Setting `labels_only` to `True` will load only the target variable.
+        This is useful in cases where only that is needed, such as scoring.
+        """
+        df = pd.read_table(self.filepath, usecols=usecols)
+        df = df.dropna(axis=0, how='any')
+        self.data = df
+
+    def _get_data_cols(self):
+        """ Given a dataframe and its meta columns, get back a list of the data
+        columns from the dataframe.
+        """
+        df = self.data
+        cols = df.columns.tolist()
+        data_cols = [x for x in cols if x not in self.meta_cols]
+        self.data_cols = data_cols
+
+    def _filter_dataset(self):
         """ A filter defined in settings['dataset']['filter']['filters'] can
         be applied to the loaded dataset. An example filter:
         "filter": {"name": "AB",
                    "filters": [{"column": "Braak", "values": [0, 1, 2, 3, 4]}]
                   }
 
-        The filter "name" is used in naming the folder that output files are 
+        The filter "name" is used in naming the folder that output files are
         deposited into. The "filters" list specifies a list of dicts, each
         of which defines a "column" to limit and a list of values to limit the
         column to.
         """
-        if settings['dataset'].get('filter'):
+        if self.settings['dataset'].get('filter'):
             data = self.data
-            filters = settings['dataset']['filter']['filters']
+            filters = self.settings['dataset']['filter']['filters']
             for f in filters:
                 data = data[data[f['column']].isin(f['values'])]
             self.data = data
+
+    def _transform_dataset(self):
+        transform = self.settings['dataset'].get('transform')
+        if transform:
+            for tf in transform:
+                column = tf['column']
+                tresholds = tf['thresholds']
+                values = self.data[column].tolist()
+                values = list(np.digitize(values, tresholds) - 1)
+                self.data[column] = values
 
 
 def get_train_test_df(df, test_ids, column):
