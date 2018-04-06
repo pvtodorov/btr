@@ -13,15 +13,9 @@ class Processor(object):
     """
 
     def __init__(self, settings=None, dataset=None, estimator=None):
-        self.settings = None
-        if settings:
-            self.settings = settings
-        self.d = None
-        if dataset:
-            self.d = dataset
-        self.e = None
-        if estimator:
-            self.e = estimator
+        self.settings = settings
+        self.dataset = dataset
+        self.estimator = estimator
 
 
 class LPOCV(Processor):
@@ -41,8 +35,6 @@ class LPOCV(Processor):
         self.gmt = None
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
-        self._outdir_path = ''
-        self._outfile_name = ''
 
     def predict(self, gmt=None):
         """Performs a background or hypothesis prediction
@@ -52,13 +44,14 @@ class LPOCV(Processor):
         """
         if gmt:
             self.gmt = gmt
-            for link, _, gene_list, _ in tqdm(gmt.generate(self.d.data_cols),
+            data_cols = self.dataset.data_cols
+            for link, _, gene_list, _ in tqdm(gmt.generate(data_cols),
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
         else:
             sampling_range = get_sampling_range(self.settings)
             for k in tqdm(sampling_range):
-                gene_list = self.d.sample_data_cols(k)
+                gene_list = self.dataset.sample_data_cols(k)
                 self._build_bcg_predictions(gene_list, k)
         self._build_df_result()
 
@@ -91,13 +84,14 @@ class LPOCV(Processor):
         for pair_index, pair in enumerate(tqdm(self.selected_pairs)):
                 tf = self.settings["processing_scheme"].get("transform_labels")
                 pair_ids = (pair[0][0], pair[1][0])
-                train_test_list = self.d.get_X_y(pair_ids,
-                                                 selected_cols=selected_cols)
+                dataset = self.dataset
+                train_test_list = dataset.get_X_y(pair_ids,
+                                                  selected_cols=selected_cols)
                 X_train, y_train, X_test, _ = train_test_list
                 y_train = [int(x) for x in y_train]
                 y_train = np.array(y_train)
                 y_train = digitize_labels(y_train, tf)
-                e = self.e
+                e = self.estimator
                 e = e.fit(X_train, y_train)
                 if self.settings["estimator"].get("call") == "probability":
                     predictions = e.predict_proba(X_test)[:, 1]
@@ -129,7 +123,7 @@ class LPOCV(Processor):
         - uses `transform` to `digitize_labels`
         - creates all possible pairs of samples
         """
-        dataset = self.d
+        dataset = self.dataset
         settings = self.settings
         tf = settings["processing_scheme"].get("transform_labels")
         subset_column = settings["processing_scheme"]["subset_col"]
