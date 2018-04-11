@@ -28,9 +28,7 @@ class Loader(object):
             self.load_settings(self.settings_path)
         # if use_synapse True, automatically login
         if use_synapse:
-            self.syn = synapseclient.login()
-            self.save_settings_to_synapse(self.settings_path,
-                                          overwrite=syn_settings_overwrite)
+            self.login_synapse(self, overwrite=syn_settings_overwrite)
         if pprint_settings:
             pprint(self.s)
 
@@ -43,6 +41,11 @@ class Loader(object):
 
     def load_dataset(self):
         self.dataset = Dataset(self.settings)
+
+    def login_synapse(self, overwrite=False):
+        self.syn = synapseclient.login()
+        self.save_settings_to_synapse(self.settings_path,
+                                      overwrite=overwrite)
 
     def get_processor_from_settings(self):
         settings = self.s
