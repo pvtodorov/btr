@@ -84,7 +84,7 @@ class Loader(object):
             annotations['gmt'] = gmt.suffix
         file.annotations = annotations
         file = get_or_create_syn_entity(file, self._syn,
-                                        skipget=False,
+                                        skipget=True,
                                         returnid=False)
 
 
