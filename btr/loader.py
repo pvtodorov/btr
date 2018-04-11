@@ -47,6 +47,9 @@ class Loader(object):
         self.save_settings_to_synapse(self.settings_path,
                                       overwrite=overwrite)
 
+    def load_estimator(self):
+        self.estimator = get_estimator(self.settings)
+
     def get_processor_from_settings(self):
         settings = self.s
         name = settings["processing_scheme"]["name"]
