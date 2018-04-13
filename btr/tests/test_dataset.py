@@ -82,3 +82,13 @@ def test_filter_from_settings():
     filtered_values = sorted(dataset.data[dataset.target].unique().tolist())
     provided_values = settings['dataset']['filter']['filters'][0]['values']
     assert(filtered_values == provided_values)
+
+
+def test_filter_after_load():
+    dataset, settings = load_dataset_basic()
+    provided_values = [0, 1, 2, 5, 6]
+    filters = [{"column": "Braak",
+                "values": provided_values}]
+    dataset.filter_dataset(filters=filters)
+    filtered_values = sorted(dataset.data[dataset.target].unique().tolist())
+    assert(filtered_values == provided_values)
