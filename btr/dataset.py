@@ -14,8 +14,8 @@ class Dataset(object):
         self.data = pd.DataFrame()
         self._load_data(usecols=usecols)
         self._get_data_cols()
-        self._filter_dataset(settings)
-        self._transform_dataset(settings)
+        self.filter_dataset()
+        # self._transform_dataset(settings)
 
     def sample_data_cols(self, k):
         """ Select a random sample of k-items from a list of columns.
@@ -61,7 +61,7 @@ class Dataset(object):
         data_cols = [x for x in cols if x not in self.meta_cols]
         self.data_cols = data_cols
 
-    def _filter_dataset(self):
+    def filter_dataset(self, filters=None):
         """ A filter defined in settings['dataset']['filter']['filters'] can
         be applied to the loaded dataset. An example filter:
         "filter": {"name": "AB",
@@ -73,12 +73,14 @@ class Dataset(object):
         of which defines a "column" to limit and a list of values to limit the
         column to.
         """
-        if self.settings['dataset'].get('filter'):
-            data = self.data
-            filters = self.settings['dataset']['filter']['filters']
+        if not filters:
+            if self.settings['dataset'].get('filter'):
+                filters = (self.settings['dataset']['filter']['filters'])
+        data = self.data
+        if filters:
             for f in filters:
                 data = data[data[f['column']].isin(f['values'])]
-            self.data = data
+        self.data = data
 
     def _transform_dataset(self):
         transform = self.settings['dataset'].get('transform')
