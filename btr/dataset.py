@@ -15,7 +15,7 @@ class Dataset(object):
         self._load_data(usecols=usecols)
         self._get_data_cols()
         self.filter_dataset()
-        # self._transform_dataset(settings)
+        self.transform_dataset()
 
     def sample_data_cols(self, k):
         """ Select a random sample of k-items from a list of columns.
@@ -82,8 +82,9 @@ class Dataset(object):
                 data = data[data[f['column']].isin(f['values'])]
         self.data = data
 
-    def _transform_dataset(self):
-        transform = self.settings['dataset'].get('transform')
+    def transform_dataset(self, transform=None):
+        if not transform:
+            transform = self.settings['dataset'].get('transform')
         if transform:
             for tf in transform:
                 column = tf['column']

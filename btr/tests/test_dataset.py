@@ -25,7 +25,8 @@ def load_dataset_filtered_AC():
         "ID_column": "ID",
         "filter": {"name": "AC",
                    "filters": [{"column": "Braak",
-                                "values": values}]}}}
+                                "values": values}]},
+        "transform": {}}}
     dataset = Dataset(settings)
     return dataset, settings
 
