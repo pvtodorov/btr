@@ -17,11 +17,12 @@ class Dataset(object):
         self.filter_dataset()
         self.transform_dataset()
 
-    def sample_data_cols(self, k):
+    def sample_data_cols(self, k, seed=None):
         """ Select a random sample of k-items from a list of columns.
         """
         data_cols = self.data_cols
-        sampled_cols = np.random.choice(data_cols, k)
+        prng = np.random.RandomState(seed)
+        sampled_cols = prng.choice(data_cols, k, replace=False)
         return [x for x in data_cols if x in sampled_cols]
 
     def get_X_y(self, test_ids, column=None, selected_cols=None):
