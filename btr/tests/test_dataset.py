@@ -93,3 +93,23 @@ def test_filter_after_load():
     dataset.filter_dataset(filters=filters)
     filtered_values = sorted(dataset.data[dataset.target].unique().tolist())
     assert(filtered_values == provided_values)
+
+
+def test_sample_cols_noseed():
+    dataset, settings = load_dataset_basic()
+    for i in range(10, 110, 10):
+        cols1 = dataset.sample_data_cols(i)
+        cols2 = dataset.sample_data_cols(i)
+        cols_overlap = [x for x in cols1 if x in cols2]
+        assert(len(cols1) == len(cols2))
+        assert(len(cols_overlap) != len(cols2))
+
+
+def test_sample_cols_seeded():
+    dataset, settings = load_dataset_basic()
+    for i in range(10, 110, 10):
+        cols1 = dataset.sample_data_cols(i, seed=47)
+        cols2 = dataset.sample_data_cols(i, seed=47)
+        cols_overlap = [x for x in cols1 if x in cols2]
+        assert(len(cols1) == len(cols2))
+        assert(len(cols_overlap) == len(cols1))
