@@ -3,7 +3,8 @@ import numpy as np
 
 
 class Dataset(object):
-    def __init__(self, settings, usecols=None):
+    def __init__(self, settings, usecols=None,
+                 filter_dataset=True, transform_dataset=True):
         self.settings = settings
         self.name = self.settings['dataset']['name']
         self.filepath = self.settings['dataset']['filepath']
@@ -14,8 +15,10 @@ class Dataset(object):
         self.data = pd.DataFrame()
         self._load_data(usecols=usecols)
         self._get_data_cols()
-        self.filter_dataset()
-        self.transform_dataset()
+        if filter_dataset:
+            self.filter_dataset()
+        if transform_dataset:
+            self.transform_dataset()
 
     def sample_data_cols(self, k, seed=None):
         """ Select a random sample of k-items from a list of columns.
@@ -87,12 +90,14 @@ class Dataset(object):
         if not transform:
             transform = self.settings['dataset'].get('transform')
         if transform:
-            for tf in transform:
-                column = tf['column']
-                tresholds = tf['thresholds']
-                values = self.data[column].tolist()
-                values = list(np.digitize(values, tresholds) - 1)
-                self.data[column] = values
+            if transform.get('digitize'):
+                digitize_param = transform.get('digitize')
+                for tf in digitize_param:
+                    column = tf['column']
+                    tresholds = tf['thresholds']
+                    values = self.data[column].tolist()
+                    values = list(np.digitize(values, tresholds) - 1)
+                    self.data[column] = values
 
 
 def get_train_test_df(df, test_ids, column):
