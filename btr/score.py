@@ -3,6 +3,7 @@ from tqdm import tqdm
 import os
 import numpy as np
 from statsmodels.sandbox.stats.multicomp import multipletests
+from .utilities import recursivedict
 
 
 class Scorer(object):
@@ -59,6 +60,7 @@ class Scorer(object):
             syn.get(f['file.id'], downloadLocation=outfolder,
                     ifcollision="overwrite.local")
         auc_dict_list = []
+        bg_runs = os.listdir(outfolder)
         for fn in tqdm(bg_runs):
             df = pd.read_csv(outfolder + fn)
             pair_idx = df['pair_index'].unique().tolist()
