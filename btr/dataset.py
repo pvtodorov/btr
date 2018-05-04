@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
+import re
 
 
 class Dataset(object):
     def __init__(self, settings, usecols=None,
-                 filter_dataset=True, transform_dataset=True):
+                 transform_dataset=True):
         self.settings = settings
         self.name = self.settings['dataset']['name']
         self.filepath = self.settings['dataset']['filepath']
@@ -15,8 +16,6 @@ class Dataset(object):
         self.data = pd.DataFrame()
         self._load_data(usecols=usecols)
         self._get_data_cols()
-        if filter_dataset:
-            self.filter_dataset()
         if transform_dataset:
             self.transform_dataset()
 
@@ -65,39 +64,35 @@ class Dataset(object):
         data_cols = [x for x in cols if x not in self.meta_cols]
         self.data_cols = data_cols
 
-    def filter_dataset(self, filters=None):
-        """ A filter defined in settings['dataset']['filter']['filters'] can
-        be applied to the loaded dataset. An example filter:
-        "filter": {"name": "AB",
-                   "filters": [{"column": "Braak", "values": [0, 1, 2, 3, 4]}]
-                  }
-
-        The filter "name" is used in naming the folder that output files are
-        deposited into. The "filters" list specifies a list of dicts, each
-        of which defines a "column" to limit and a list of values to limit the
-        column to.
-        """
-        if not filters:
-            if self.settings['dataset'].get('filter'):
-                filters = (self.settings['dataset']['filter']['filters'])
-        data = self.data
-        if filters:
-            for f in filters:
-                data = data[data[f['column']].isin(f['values'])]
-        self.data = data
-
     def transform_dataset(self, transform=None):
         if not transform:
-            transform = self.settings['dataset'].get('transform')
-        if transform:
-            if transform.get('digitize'):
-                digitize_param = transform.get('digitize')
-                for tf in digitize_param:
-                    column = tf['column']
-                    tresholds = tf['thresholds']
-                    values = self.data[column].tolist()
-                    values = list(np.digitize(values, tresholds) - 1)
-                    self.data[column] = values
+            transforms = self.settings['dataset'].get('transforms')
+        else:
+            transforms = [transform]
+        if transforms:
+            for transform in transforms:
+                self._apply_transform(transform)
+
+    def _apply_transform(self, transform):
+        operation = transform.get("operation")
+        if operation == "filter":
+            column = transform["column"]
+            values = transform["values"]
+            self.data = self.data[self.data[column].isin(values)]
+        if operation == "digitize":
+            column = transform["column"]
+            thresholds = transform["thresholds"]
+            values = self.data[column].tolist()
+            values = list(np.digitize(values, thresholds) - 1)
+            self.data[column] = values
+        if operation == "str2float":
+            columns_list = transform["columns_list"]
+            for column in columns_list:
+                values = self.data[column].tolist()
+                non_decimal = re.compile(r'[^\d.]+')
+                converted_values = [non_decimal.sub('', x) for x in values]
+                self.data[column] = converted_values
+                self.data = self.data.astype({column: float})
 
 
 def get_train_test_df(df, test_ids, column):
