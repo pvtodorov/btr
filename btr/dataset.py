@@ -7,11 +7,11 @@ class Dataset(object):
     def __init__(self, settings, usecols=None,
                  transform_dataset=True):
         self.settings = settings
-        self.name = self.settings['dataset']['name']
-        self.filepath = self.settings['dataset']['filepath']
-        self.meta_cols = self.settings['dataset']['meta_columns']
-        self.target = self.settings['dataset']['target']
-        self.id_col = self.settings['dataset']['ID_column']
+        self.name = self.settings['name']
+        self.filepath = self.settings['filepath']
+        self.meta_cols = self.settings['meta_columns']
+        self.target = self.settings['target']
+        self.id_col = self.settings['ID_column']
         self.data_cols = []
         self.data = pd.DataFrame()
         self._load_data(usecols=usecols)
@@ -66,7 +66,7 @@ class Dataset(object):
 
     def transform_dataset(self, transform=None):
         if not transform:
-            transforms = self.settings['dataset'].get('transforms')
+            transforms = self.settings.get('transforms')
         else:
             transforms = [transform]
         if transforms:
