@@ -12,6 +12,7 @@ class Dataset(object):
         self.meta_cols = self.settings['meta_columns']
         self.target = self.settings['target']
         self.id_col = self.settings['ID_column']
+        self.confounder = self.settings.get('confounder')
         self.data_cols = []
         self.data = pd.DataFrame()
         self._load_data(usecols=usecols)
