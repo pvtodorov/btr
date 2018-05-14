@@ -14,8 +14,8 @@ setup(name='btr',
                               'btr-score=btr.score:score_main',
                               'btr-stats=btr.score:stats_main']},
       install_requires=[
-          'mord', 'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
-          'scikit-learn', 'scipy', 'six', 'sklearn', 'statsmodels', 'tqdm',
-          'synapseclient', 'nose2'
+          'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
+          'scikit-learn', 'scipy', 'six', 'scikit-learn', 'statsmodels',
+          'tqdm', 'synapseclient', 'mord'
       ]
       )
