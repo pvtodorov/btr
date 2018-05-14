@@ -35,16 +35,16 @@ def get_outdir_path(settings):
     return outdir_path
 
 
-def get_outfile_name(gmt=None):
+def get_uuid():
+    return uuid.uuid4()
+
+
+def get_outfile_name(name_base):
     """ Returns a name for a file. If a GMT object is given as input, uses
     `gmt.suffix` to produce a name for the file. If not, the file is understood
     to be a background file and a uuid is returned.
     """
-    if gmt:
-        outfile_name = gmt.suffix
-    else:
-        outfile_name = str(uuid.uuid4())
-    outfile_name = outfile_name + '.csv'
+    outfile_name = name_base + '.csv'
     print('outfile name: ' + outfile_name)
     return outfile_name
 

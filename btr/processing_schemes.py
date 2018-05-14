@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
-                        get_outfile_name, digitize_labels)
+                        get_outfile_name, get_uuid)
+from .estimators import get_estimator
 from .pairs_processor import PairsProcessor
 
 
@@ -12,10 +13,17 @@ class Processor(object):
     background and gmt gene lists.
     """
 
-    def __init__(self, settings=None, dataset=None, estimator=None):
+    def __init__(self, settings=None, dataset=None):
         self.settings = settings
         self.dataset = dataset
-        self.estimator = estimator
+        if self.settings:
+            self.estimator = self.get_estimator(self.settings.get('estimator'))
+        self.uuid = get_uuid()
+        self.gmt = None
+
+    def get_estimator(self, estimator_settings=None):
+        if estimator_settings:
+            self.estimator = get_estimator(estimator_settings)
 
 
 class LPOCV(Processor):
@@ -26,17 +34,14 @@ class LPOCV(Processor):
     predicting the target variable for the withheld pair.
     """
 
-    def __init__(self, settings=None, dataset=None, estimator=None):
-        super().__init__(settings=settings,
-                         dataset=dataset,
-                         estimator=estimator)
+    def __init__(self, settings=None, dataset=None):
+        super().__init__(settings=settings, dataset=dataset)
         self.selected_pairs = []
         self.df_result = pd.DataFrame()
-        self.gmt = None
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
 
-    def predict(self, gmt=None):
+    def predict(self, gmt=None, background_params=None):
         """Performs a background or hypothesis prediction
 
         Reads in lists of features from a `gmt` or a random feature list for
@@ -48,10 +53,11 @@ class LPOCV(Processor):
             for link, _, gene_list, _ in tqdm(gmt.generate(data_cols),
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
-        else:
+        elif background_params:
             sampling_range = get_sampling_range(self.settings)
+            uuid_tl = self.uuid.time_low()
             for k in tqdm(sampling_range):
-                gene_list = self.dataset.sample_data_cols(k)
+                gene_list = self.dataset.sample_data_cols(k, uuid_tl)
                 self._build_bcg_predictions(gene_list, k)
         self._build_df_result()
 
@@ -67,7 +73,10 @@ class LPOCV(Processor):
         else:
             self._outdir_path += 'background_predictions/'
         check_or_create_dir(self._outdir_path)
-        self._outfile_name = get_outfile_name(gmt=self.gmt)
+        name = str(self.uuid)
+        if self.gmt:
+            name = self.gmt.suffix
+        self._outfile_name = get_outfile_name(name)
         results_path = self._outdir_path + self._outfile_name
         self.df_result.to_csv(results_path, index=False)
 
@@ -82,7 +91,6 @@ class LPOCV(Processor):
         """
         self._get_pairs()
         for pair_index, pair in enumerate(tqdm(self.selected_pairs)):
-                tf = self.settings["processing_scheme"].get("transform_labels")
                 pair_ids = (pair[0][0], pair[1][0])
                 dataset = self.dataset
                 train_test_list = dataset.get_X_y(pair_ids,
@@ -90,10 +98,9 @@ class LPOCV(Processor):
                 X_train, y_train, X_test, _ = train_test_list
                 y_train = [int(x) for x in y_train]
                 y_train = np.array(y_train)
-                y_train = digitize_labels(y_train, tf)
                 e = self.estimator
                 e = e.fit(X_train, y_train)
-                if self.settings["estimator"].get("call") == "probability":
+                if self.estimator.settings.get("call") == "probability":
                     predictions = e.predict_proba(X_test)[:, 1]
                 else:
                     predictions = e.predict(X_test)
@@ -117,14 +124,14 @@ class LPOCV(Processor):
 
     def _get_pairs(self):
         pairs_proc = PairsProcessor(self.dataset,
-                                    self.settings['pair_settings'])
+                                    self.settings['pairs'])
         self.selected_pairs = pairs_proc.selected_pairs
 
 
 def get_sampling_range(settings):
     """Returns a list of feature set lengths for background sampling.
     """
-    interval_params_list = settings['background_params']['intervals']
+    interval_params_list = settings['background']['intervals']
     sampling_range = []
     for params in interval_params_list:
         start = params['start']
