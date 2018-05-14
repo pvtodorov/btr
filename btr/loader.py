@@ -6,7 +6,6 @@ from synapseclient import File, Folder
 from .utilities import get_settings_annotations, get_settings_md5
 from .gmt import GMT
 from .dataset import Dataset
-from .estimators import get_estimator
 from pprint import pprint
 
 
@@ -18,7 +17,6 @@ class Loader(object):
         self.settings = None
         self.dataset = None
         self.proc = None
-        self.estimator = None
         self.gmt = None
         self.syn = None
         self.settings_path = settings_path
@@ -28,9 +26,9 @@ class Loader(object):
             self.load_settings(self.settings_path)
         # if use_synapse True, automatically login
         if use_synapse:
-            self.login_synapse(self, overwrite=syn_settings_overwrite)
+            self.login_synapse(overwrite=syn_settings_overwrite)
         if pprint_settings:
-            pprint(self.s)
+            pprint(self.settings)
 
     def load_settings(self, settings_path):
         with open(self.settings_path) as f:
@@ -40,21 +38,19 @@ class Loader(object):
         self.gmt = GMT(gmt_path)
 
     def load_dataset(self):
-        self.dataset = Dataset(self.settings)
+        self.dataset = Dataset(self.settings["dataset"])
 
     def login_synapse(self, overwrite=False):
         self.syn = synapseclient.login()
         self.save_settings_to_synapse(self.settings_path,
                                       overwrite=overwrite)
 
-    def load_estimator(self):
-        self.estimator = get_estimator(self.settings)
-
-    def get_processor_from_settings(self):
-        settings = self.s
-        name = settings["processing_scheme"]["name"]
+    def load_processor(self):
+        processor_settings = self.settings["processor"]
+        name = processor_settings["name"]
         if name == 'LPOCV':
-            self.proc = LPOCV(settings=settings)
+            self.proc = LPOCV(settings=processor_settings,
+                              dataset=self.dataset)
         else:
             raise NotImplementedError
 
@@ -65,12 +61,12 @@ class Loader(object):
             return
         parent = get_or_create_syn_folder(self.syn,
                                           'run_settings/',
-                                          self.s['project_synid'])
+                                          self.settings['project_synid'])
         localfile = File(path=settings_path, parent=parent)
         remotefile = get_or_create_syn_entity(localfile, self.syn,
                                               skipget=False,
                                               returnid=False)
-        md5 = get_settings_md5(self.s)
+        md5 = get_settings_md5(self.settings)
         if [md5] == remotefile.annotations.get('settings_md5'):
             print('Local settings file and remote have the same md5 hashes.')
         else:
@@ -96,9 +92,9 @@ class Loader(object):
         filename = self.proc._outfile_name
         parent = get_or_create_syn_folder(self.syn,
                                           dirpath,
-                                          self.s['project_synid'])
+                                          self.settings['project_synid'])
         file = File(path=dirpath + filename, parent=parent)
-        annotations = get_settings_annotations(self.s)
+        annotations = get_settings_annotations(self.settings)
         annotations['btr_file_type'] = 'prediction'
         if 'background_predictions' in dirpath:
             annotations['prediction_type'] = 'background'
@@ -110,7 +106,7 @@ class Loader(object):
         if gmt:
             annotations['gmt'] = gmt.suffix
         file.annotations = annotations
-        file = get_or_create_syn_entity(file, self._syn,
+        file = get_or_create_syn_entity(file, self.syn,
                                         skipget=True,
                                         returnid=False)
 

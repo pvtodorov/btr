@@ -1,4 +1,6 @@
+import argparse
 from .loader import Loader
+from .gmt import GMT
 
 
 def main():
@@ -22,8 +24,8 @@ def main():
             gmt = GMT(gmt_path)
         loader = Loader(settings_path=settings_path, use_synapse=True,
                         syn_settings_overwrite=overwrite_settings)
-        loader.get_processor_from_settings()
-        loader.proc.from_settings()
+        loader.load_dataset()
+        loader.load_processor()
         loader.proc.predict(gmt=gmt)
         loader.proc.save_results()
         loader.save_prediction_to_synapse()

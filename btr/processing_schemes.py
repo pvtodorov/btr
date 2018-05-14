@@ -16,8 +16,9 @@ class Processor(object):
     def __init__(self, settings=None, dataset=None):
         self.settings = settings
         self.dataset = dataset
+        self.estimator = None
         if self.settings:
-            self.estimator = self.get_estimator(self.settings.get('estimator'))
+            self.get_estimator(self.settings.get('estimator'))
         self.uuid = get_uuid()
         self.gmt = None
 
@@ -41,7 +42,7 @@ class LPOCV(Processor):
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
 
-    def predict(self, gmt=None, background_params=None):
+    def predict(self, gmt=None):
         """Performs a background or hypothesis prediction
 
         Reads in lists of features from a `gmt` or a random feature list for
@@ -53,9 +54,9 @@ class LPOCV(Processor):
             for link, _, gene_list, _ in tqdm(gmt.generate(data_cols),
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
-        elif background_params:
+        else:
             sampling_range = get_sampling_range(self.settings)
-            uuid_tl = self.uuid.time_low()
+            uuid_tl = self.uuid.time_low
             for k in tqdm(sampling_range):
                 gene_list = self.dataset.sample_data_cols(k, uuid_tl)
                 self._build_bcg_predictions(gene_list, k)
@@ -100,7 +101,7 @@ class LPOCV(Processor):
                 y_train = np.array(y_train)
                 e = self.estimator
                 e = e.fit(X_train, y_train)
-                if self.estimator.settings.get("call") == "probability":
+                if self.settings["estimator"].get("call") == "probability":
                     predictions = e.predict_proba(X_test)[:, 1]
                 else:
                     predictions = e.predict(X_test)

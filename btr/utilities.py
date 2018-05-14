@@ -72,13 +72,13 @@ def get_settings_annotations(settings):
                            sort_keys=True))
     annotations['dataset_target'] = ds['target']
     annotations['dataset_ID_column'] = ds['ID_column']
-    annotations['dataset_confounder'] = ds.get(['confounder'])
+    annotations['dataset_confounder'] = ds.get('confounder')
     annotations['dataset_transforms'] = json.dumps(False)
     if ds.get('transforms'):
         for i, f in enumerate(ds['transforms']):
-            for k, v in f:
+            for k, v in f.items():
                 annotations['dataset_transform_' + str(i) + '_' + str(k)] = \
-                    json.dumps(f[v], allow_nan=False, sort_keys=True)
+                    json.dumps(f[k], allow_nan=False, sort_keys=True)
     # processor details
     ps = settings['processor']
     annotations['processor_name'] = ps['name']
@@ -86,10 +86,9 @@ def get_settings_annotations(settings):
     es = ps['estimator']
     annotations['processor_estimator_name'] = ps['estimator']['name']
     annotations['processor_estimator_params'] = \
-        json.dumps(es['estimator_params'],
+        json.dumps(es['params'],
                    allow_nan=False, sort_keys=True)
-    annotations['processor_estimator_call'] = \
-        es['settings'].get("call", "class")
+    annotations['processor_estimator_call'] = es.get("call", "class")
     # background
     bs = ps["background"]
     for i, p in enumerate(bs['intervals']):
@@ -99,13 +98,13 @@ def get_settings_annotations(settings):
     if annotations['processor_name'] == 'LPOCV':
         prs = ps['pairs']
         annotations['processor_pairs_shuffle_samples'] = prs['shuffle_samples']
-        annotations['processor_pairs_seed'] = prs['shuffle_seed']
+        annotations['processor_pairs_seed'] = prs['seed']
         for i, f in enumerate(prs['steps']):
             annotations['processor_pairs_steps_' + str(i)] = f['operation']
-            for k, v in f:
+            for k, v in f.items():
                 annotations['processor_pairs_steps_' +
                             str(i) + '_' + str(k)] = \
-                    json.dumps(f[v], allow_nan=False, sort_keys=True)
+                    json.dumps(f[k], allow_nan=False, sort_keys=True)
     # misc
     annotations['misc'] = "".join(json.dumps(settings['misc']))
     return annotations
