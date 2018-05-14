@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from itertools import combinations
 from .utilities import (recursivedict, check_or_create_dir, get_outdir_path,
                         get_outfile_name, digitize_labels)
+from .pairs_processor import PairsProcessor
 
 
 class Processor(object):
@@ -80,7 +80,7 @@ class LPOCV(Processor):
         features. In the case where a feature set is supplied via `gmt`, `k`
         corresponds to `gmt.suffix`
         """
-        self._get_pairs(**self.settings["processing_scheme"]["pair_settings"])
+        self._get_pairs()
         for pair_index, pair in enumerate(tqdm(self.selected_pairs)):
                 tf = self.settings["processing_scheme"].get("transform_labels")
                 pair_ids = (pair[0][0], pair[1][0])
@@ -115,70 +115,10 @@ class LPOCV(Processor):
             df_result_t = df_result_t[df_result_t_cols]
             self.df_result = self.df_result.append(df_result_t)
 
-    def _build_pairs_list(self):
-        """Generates all possible pairs of samples.
-
-        From `settings`
-        - Filters dataframe such that `subset_col` is limited to `subset`
-        - uses `transform` to `digitize_labels`
-        - creates all possible pairs of samples
-        """
-        dataset = self.dataset
-        settings = self.settings
-        tf = settings["processing_scheme"].get("transform_labels")
-        subset_column = settings["processing_scheme"]["subset_col"]
-        subset = settings["processing_scheme"]["subset"]
-        df = dataset.data
-        df_f = df[df[subset_column] == subset]
-        ids_list = df_f[dataset.id_col].tolist()
-        splits_list = df_f[dataset.target].tolist()
-        if tf:
-            splits_list = digitize_labels(splits_list, tf)
-        samples = [(x, y) for x, y in
-                   zip(ids_list, splits_list)]
-        samples = sorted(samples, key=lambda x: x[1])
-        pairs_list = [x for x in combinations(samples, 2)]
-        self._pairs_list = pairs_list
-
-    def _get_pairs(self, shuffle=True, seed=47, sample_once=False):
-        """Generates reproducible list of pairs to use for LPOCV.
-
-        Keyword arguments:
-        shuffle -- whether or not to shuffle the pairs from
-                   `_build_pairs_list()`. (default True)
-        seed -- seed to use when shuffling pairs. (default 47)
-        sample_once -- makes an effort to include each in the dataset at most
-                       once. (default False)
-        """
-        self.selected_pairs = []
-        if len(self._pairs_list) == 0:
-            self._build_pairs_list()
-        sample_list = sorted(list(set([sample[0] for pair
-                                       in self._pairs_list
-                                       for sample in pair])))
-        used_ids = []
-        selected_pairs = []
-        prng = np.random.RandomState(seed)
-        for sample in sample_list:
-            if sample_once:
-                if sample in used_ids:
-                    continue
-            pairs_list_f0 = [x for x in self._pairs_list]
-            pairs_list_f1 = [x for x in pairs_list_f0
-                             if sample in [x[0][0], x[1][0]]]
-            pairs_list_f2 = [x for x in pairs_list_f1
-                             if x[0][1] != x[1][1]]
-            pairs_list_f3 = [x for x in pairs_list_f2
-                             if x not in selected_pairs]
-            pairs_list_f4 = [x for x in pairs_list_f3
-                             if ((x[0][0] not in used_ids) and
-                                 (x[1][0] not in used_ids))]
-            if len(pairs_list_f4) > 0:
-                pairs_list_f3 = pairs_list_f4
-            sel_pair = pairs_list_f3[prng.choice(len(pairs_list_f3)) - 1]
-            selected_ids = [sample[0] for sample in sel_pair]
-            used_ids += selected_ids
-            self.selected_pairs.append(sel_pair)
+    def _get_pairs(self):
+        pairs_proc = PairsProcessor(self.dataset,
+                                    self.settings['pair_settings'])
+        self.selected_pairs = pairs_proc.selected_pairs
 
 
 def get_sampling_range(settings):
