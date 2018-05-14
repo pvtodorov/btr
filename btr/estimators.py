@@ -5,9 +5,8 @@ from sklearn.ensemble import RandomForestClassifier
 
 def get_estimator(settings):
     """Returns an estmator as specified in the settings dict."""
-    est_settings = settings["estimator"]
-    name = est_settings["name"]
-    params = est_settings["estimator_params"]
+    name = settings["name"]
+    params = settings["estimator_params"]
     if name == "Ordinal":
         return LogisticAT(**params)
     elif name == "Multiclass_Linear":
