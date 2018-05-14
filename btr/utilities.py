@@ -51,6 +51,7 @@ def get_outfile_name(name_base):
 
 def get_settings_annotations(settings):
     annotations = {}
+    # package details
     package_path = importlib.util.find_spec('btr').origin[:-15]
     origin = subprocess.check_output(["git", "-C", package_path, "config",
                                       "--get", "remote.origin.url"]).decode()
@@ -59,57 +60,52 @@ def get_settings_annotations(settings):
                                            "rev-parse", "HEAD"])
     commit_hash = commit_hash.strip().decode()
     annotations['github_commit_hash'] = commit_hash
+    # settings details
     annotations['settings_md5'] = get_settings_md5(settings)
-    annotations['dataset_name'] = settings['dataset']['name']
-    annotations['dataset_filepath'] = settings['dataset']['filepath']
+    # dataset details
+    ds = settings['dataset']
+    annotations['dataset_name'] = ds['name']
+    annotations['dataset_filepath'] = ds['filepath']
     annotations['dataset_meta_columns'] = \
-        "".join(json.dumps(settings['dataset']['meta_columns'],
+        "".join(json.dumps(ds['meta_columns'],
                            allow_nan=False,
                            sort_keys=True))
-    annotations['dataset_target'] = settings['dataset']['target']
-    annotations['dataset_ID_column'] = settings['dataset']['ID_column']
-    annotations['dataset_filter_name'] = json.dumps(False)
-    if settings['dataset'].get('filter'):
-        annotations['dataset_filter_name'] = \
-            settings['dataset']['filter']['name']
-        annotations['dataset_filters_num'] = \
-            len(settings['dataset']['filter']['filters'])
-        for i, f in enumerate(settings['dataset']['filter']['filters']):
-            annotations['dataset_filter_column_' + str(i)] = f['column']
-            annotations['dataset_filter_values_' + str(i)] = \
-                json.dumps(f['values'], allow_nan=False, sort_keys=True)
-    annotations['estimator_name'] = \
-        settings['estimator']['name']
-    annotations['estimator_params'] = \
-        json.dumps(settings['estimator']['estimator_params'],
+    annotations['dataset_target'] = ds['target']
+    annotations['dataset_ID_column'] = ds['ID_column']
+    annotations['dataset_confounder'] = ds.get(['confounder'])
+    annotations['dataset_transforms'] = json.dumps(False)
+    if ds.get('transforms'):
+        for i, f in enumerate(ds['transforms']):
+            for k, v in f:
+                annotations['dataset_transform_' + str(i) + '_' + str(k)] = \
+                    json.dumps(f[v], allow_nan=False, sort_keys=True)
+    # processor details
+    ps = settings['processor']
+    annotations['processor_name'] = ps['name']
+    # estimator
+    es = ps['estimator']
+    annotations['processor_estimator_name'] = ps['estimator']['name']
+    annotations['processor_estimator_params'] = \
+        json.dumps(es['estimator_params'],
                    allow_nan=False, sort_keys=True)
-    annotations["estimator_call"] = \
-        settings["estimator"].get("call", "class")
-    annotations['processing_scheme_name'] = \
-        settings['processing_scheme']['name']
-    if annotations['processing_scheme_name'] == 'LPOCV':
-        annotations['processing_scheme_subset_col'] = \
-            settings['processing_scheme']['subset_col']
-        annotations['processing_scheme_subset'] = \
-            settings['processing_scheme']['subset']
-        annotations['processing_scheme_pair_col'] = \
-            settings['processing_scheme']['pair_col']
-        annotations['processing_scheme_transform_labels'] = \
-            json.dumps(settings['processing_scheme']['transform_labels'])
-        annotations['processing_scheme_pair_settings_shuffle'] = \
-            json.dumps(settings['processing_scheme']
-                               ['pair_settings']
-                               ['shuffle'])
-        annotations['processing_scheme_pair_settings_seed'] = \
-            settings['processing_scheme']['pair_settings']['seed']
-        annotations['processing_scheme_pair_settings_sample_once'] = \
-            json.dumps(settings['processing_scheme']
-                               ['pair_settings']
-                               ['sample_once'])
-    annotations['background_params_intervals'] = \
-        len(settings['background_params']['intervals'])
-    for i, p in enumerate(settings['background_params']['intervals']):
+    annotations['processor_estimator_call'] = \
+        es['settings'].get("call", "class")
+    # background
+    bs = ps["background"]
+    for i, p in enumerate(bs['intervals']):
         annotations['background_params_interval_' + str(i)] = \
             json.dumps(p, allow_nan=False, sort_keys=True)
+    # lpocv
+    if annotations['processor_name'] == 'LPOCV':
+        prs = ps['pairs']
+        annotations['processor_pairs_shuffle_samples'] = prs['shuffle_samples']
+        annotations['processor_pairs_seed'] = prs['shuffle_seed']
+        for i, f in enumerate(prs['steps']):
+            annotations['processor_pairs_steps_' + str(i)] = f['operation']
+            for k, v in f:
+                annotations['processor_pairs_steps_' +
+                            str(i) + '_' + str(k)] = \
+                    json.dumps(f[v], allow_nan=False, sort_keys=True)
+    # misc
     annotations['misc'] = "".join(json.dumps(settings['misc']))
     return annotations

@@ -8,9 +8,9 @@ steps_dict = [{"operation": "contains_sample"},
               {"operation": "unique_pair"},
               {"operation": "min_confounder"}]
 lpocv_settings = {"name": "LPOCV",
-                  "pair_settings": {"shuffle_samples": True,
-                                    "seed": 47,
-                                    "steps": steps_dict},
+                  "pairs": {"shuffle_samples": True,
+                            "seed": 47,
+                            "steps": steps_dict},
                   "estimator": estimator_dict}
 
 
