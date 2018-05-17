@@ -5,6 +5,7 @@ import json
 import subprocess
 import importlib
 import hashlib
+import morph
 
 
 def recursivedict():
@@ -22,7 +23,8 @@ def check_or_create_dir(path):
 
 def get_settings_md5(settings):
     """Produces an md5 hash of the settings dict"""
-    settings_str = json.dumps(settings, allow_nan=False, sort_keys=True)
+    flat_settings = flatten_settings(settings)
+    settings_str = json.dumps(flat_settings, allow_nan=False, sort_keys=True)
     h = hashlib.md5()
     h.update(settings_str.encode())
     return h.hexdigest()
@@ -49,62 +51,20 @@ def get_outfile_name(name_base):
     return outfile_name
 
 
-def get_settings_annotations(settings):
-    annotations = {}
-    # package details
+def flatten_settings(settings, prefix=''):
+    flat_settings = morph.flatten(settings)
+    flat_settings = {prefix + k: v for k, v in flat_settings.items()}
+    return flat_settings
+
+
+def get_version_info():
+    version_info = {}
     package_path = importlib.util.find_spec('btr').origin[:-15]
     origin = subprocess.check_output(["git", "-C", package_path, "config",
                                       "--get", "remote.origin.url"]).decode()
-    annotations['github_origin'] = origin
+    version_info['github_origin'] = origin
     commit_hash = subprocess.check_output(["git", "-C", package_path,
                                            "rev-parse", "HEAD"])
     commit_hash = commit_hash.strip().decode()
-    annotations['github_commit_hash'] = commit_hash
-    # settings details
-    annotations['settings_md5'] = get_settings_md5(settings)
-    # dataset details
-    ds = settings['dataset']
-    annotations['dataset_name'] = ds['name']
-    annotations['dataset_filepath'] = ds['filepath']
-    annotations['dataset_meta_columns'] = \
-        "".join(json.dumps(ds['meta_columns'],
-                           allow_nan=False,
-                           sort_keys=True))
-    annotations['dataset_target'] = ds['target']
-    annotations['dataset_ID_column'] = ds['ID_column']
-    annotations['dataset_confounder'] = ds.get('confounder')
-    annotations['dataset_transforms'] = json.dumps(False)
-    if ds.get('transforms'):
-        for i, f in enumerate(ds['transforms']):
-            for k, v in f.items():
-                annotations['dataset_transform_' + str(i) + '_' + str(k)] = \
-                    json.dumps(f[k], allow_nan=False, sort_keys=True)
-    # processor details
-    ps = settings['processor']
-    annotations['processor_name'] = ps['name']
-    # estimator
-    es = ps['estimator']
-    annotations['processor_estimator_name'] = ps['estimator']['name']
-    annotations['processor_estimator_params'] = \
-        json.dumps(es['params'],
-                   allow_nan=False, sort_keys=True)
-    annotations['processor_estimator_call'] = es.get("call", "class")
-    # background
-    bs = ps["background"]
-    for i, p in enumerate(bs['intervals']):
-        annotations['background_params_interval_' + str(i)] = \
-            json.dumps(p, allow_nan=False, sort_keys=True)
-    # lpocv
-    if annotations['processor_name'] == 'LPOCV':
-        prs = ps['pairs']
-        annotations['processor_pairs_shuffle_samples'] = prs['shuffle_samples']
-        annotations['processor_pairs_seed'] = prs['seed']
-        for i, f in enumerate(prs['steps']):
-            annotations['processor_pairs_steps_' + str(i)] = f['operation']
-            for k, v in f.items():
-                annotations['processor_pairs_steps_' +
-                            str(i) + '_' + str(k)] = \
-                    json.dumps(f[k], allow_nan=False, sort_keys=True)
-    # misc
-    annotations['misc'] = "".join(json.dumps(settings['misc']))
-    return annotations
+    version_info['github_commit_hash'] = commit_hash
+    return version_info
