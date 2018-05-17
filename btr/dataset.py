@@ -4,7 +4,7 @@ import re
 
 
 class Dataset(object):
-    def __init__(self, settings, usecols=None,
+    def __init__(self, settings, usecols=None, cols_only=False,
                  transform_dataset=True):
         self.settings = settings
         self.name = self.settings['name']
@@ -47,12 +47,15 @@ class Dataset(object):
         y_test = df_test[self.target].tolist()
         return X_train, y_train, X_test, y_test
 
-    def _load_data(self, usecols=None):
+    def _load_data(self, usecols=None, cols_only=False):
         """ Load dataframe from supplied path. Drop any rows with NaNs.
         Setting `labels_only` to `True` will load only the target variable.
         This is useful in cases where only that is needed, such as scoring.
         """
-        df = pd.read_table(self.filepath, usecols=usecols)
+        nrows = None
+        if cols_only:
+            nrows = 0
+        df = pd.read_table(self.filepath, usecols=usecols, nrows=nrows)
         df = df.dropna(axis=0, how='any')
         self.data = df
 
