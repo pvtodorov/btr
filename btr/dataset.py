@@ -19,6 +19,7 @@ class Dataset(object):
         self._get_data_cols()
         if transform_dataset:
             self.transform_dataset()
+        self.annotations = {}
 
     def sample_data_cols(self, k, seed=None):
         """ Select a random sample of k-items from a list of columns.
