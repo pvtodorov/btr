@@ -3,9 +3,11 @@ from .processing_schemes import LPOCV
 import synapseclient
 import synapseutils
 from synapseclient import File, Folder
-from .utilities import get_settings_annotations, get_settings_md5
+from .utilities import (flatten_settings, get_version_info, get_settings_md5,
+                        get_settings_annotations)
 from .gmt import GMT
 from .dataset import Dataset
+from .scorer import ScoreLPOCV
 from pprint import pprint
 
 
@@ -35,22 +37,36 @@ class Loader(object):
             self.settings = json.load(f)
 
     def load_gmt(self, gmt_path):
-        self.gmt = GMT(gmt_path)
-
-    def load_dataset(self):
-        self.dataset = Dataset(self.settings["dataset"])
+        if gmt_path:
+            self.gmt = GMT(gmt_path)
 
     def login_synapse(self, overwrite=False):
         self.syn = synapseclient.login()
         self.save_settings_to_synapse(self.settings_path,
                                       overwrite=overwrite)
 
-    def load_processor(self):
-        processor_settings = self.settings["processor"]
-        name = processor_settings["name"]
+    def load_dataset(self, task):
+        ds = self.settings['dataset']
+        if task == 'predict':
+            self.dataset = Dataset(ds)
+        elif task == 'score':
+            self.dataset = Dataset(ds, usecols=ds['meta_columns'])
+        elif task == 'stats':
+            self.dataset = Dataset(ds, cols_only=True)
+        else:
+            raise NotImplementedError
+
+    def load_processor(self, task):
+        self.settings['processor'] = self.settings["processor"]
+        name = self.settings['processor']["name"]
         if name == 'LPOCV':
-            self.proc = LPOCV(settings=processor_settings,
-                              dataset=self.dataset)
+            if task == "predict":
+                self.proc = LPOCV(settings=self.settings['processor'],
+                                  dataset=self.dataset)
+            elif task == 'score':
+                self.proc = ScoreLPOCV(settings=self.settings)
+            elif task == "stats":
+                self.proc = ScoreLPOCV(settings=self.settings)
         else:
             raise NotImplementedError
 
