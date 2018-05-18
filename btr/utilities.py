@@ -68,3 +68,11 @@ def get_version_info():
     commit_hash = commit_hash.strip().decode()
     version_info['github_commit_hash'] = commit_hash
     return version_info
+
+
+def get_settings_annotations(settings):
+    annotations = {}
+    annotations.update(get_version_info())
+    annotations.update(flatten_settings(settings))
+    annotations.update({'settings_md5': get_settings_md5(settings)})
+    return annotations
