@@ -8,6 +8,8 @@ class GMT(object):
         self.gmt = []
         self.suffix = ''
         self._read_gmt()
+        self.annotations = {'suffix': self.suffix,
+                            'filepath': self.filepath}
 
     def generate(self, dataset_genes=None):
         """Yields a link, a description, list of matching and missing genes.
