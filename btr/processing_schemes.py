@@ -15,19 +15,26 @@ class Processor(object):
 
     def __init__(self, settings=None, dataset=None):
         self.settings = settings
+        self.annotations = {}
+
+
+class Predictor(Processor):
+    def __init__(self, settings=None, dataset=None):
+        super().__init__(settings=settings, dataset=dataset)
         self.dataset = dataset
+        self.annotations['type'] = 'Predictor'
         self.estimator = None
         if self.settings:
             self.get_estimator(self.settings.get('estimator'))
         self.uuid = get_uuid()
-        self.gmt = None
+        self.annotations['uuid'] = str(self.uuid)
 
     def get_estimator(self, estimator_settings=None):
         if estimator_settings:
             self.estimator = get_estimator(estimator_settings)
 
 
-class LPOCV(Processor):
+class LPOCV(Predictor):
     """Leave-Pair-Out Cross-Validation scheme
 
     Implements leave-pair-out cross-validation in which each pairs of samples
@@ -49,14 +56,17 @@ class LPOCV(Processor):
         background and uses them to fit a model and make a predictions
         """
         if gmt:
-            self.gmt = gmt
+            self.annotations['prediction.type'] = 'hypothesis'
+            self.annotations['gmt'] = gmt.suffix
             data_cols = self.dataset.data_cols
             for link, _, gene_list, _ in tqdm(gmt.generate(data_cols),
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
         else:
+            self.annotations['prediction.type'] = 'background'
             sampling_range = get_sampling_range(self.settings)
             uuid_tl = self.uuid.time_low
+            self.annotations['uuid.time_low'] = uuid_tl
             for k in tqdm(sampling_range):
                 gene_list = self.dataset.sample_data_cols(k, uuid_tl)
                 self._build_bcg_predictions(gene_list, k)
@@ -69,14 +79,13 @@ class LPOCV(Processor):
         Gene set predictions are place in `hypothesis_predictions/`
         """
         self._outdir_path = get_outdir_path(self.settings)
-        if self.gmt:
+        if self.annotations['prediction.type'] == 'hypothesis':
             self._outdir_path += 'hypothesis_predictions/'
         else:
             self._outdir_path += 'background_predictions/'
         check_or_create_dir(self._outdir_path)
-        name = str(self.uuid)
         if self.gmt:
-            name = self.gmt.suffix
+            name = self.annotations.get('gmt', str(self.uuid))
         self._outfile_name = get_outfile_name(name)
         results_path = self._outdir_path + self._outfile_name
         self.df_result.to_csv(results_path, index=False)
