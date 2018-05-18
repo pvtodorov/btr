@@ -3,62 +3,48 @@ from tqdm import tqdm
 import os
 import numpy as np
 from statsmodels.sandbox.stats.multicomp import multipletests
-from .utilities import recursivedict
+from .utilities import (recursivedict, get_outdir_path, check_or_create_dir)
+from .processing_schemes import Processor
 
 
-class Scorer(object):
+class Scorer(Processor):
     def __init__(self, settings=None):
-        self.s = settings
-        self.y = []
+        super().__init__(settings=settings)
+        self.annotations['type'] = 'Scorer'
+        self.y_dict = {}
 
-    def from_settings(self, settings_path=None):
-        if settings_path:
-            with open(settings_path) as f:
-                settings = json.load(f)
-            self.s = settings
-        if self.s:
-            self.get_y_dict()
-
-    def get_y_dict(self):
+    def get_y_dict(self, dataset):
         """
         """
-        dataset = Dataset(self.s)
-        df = dataset.data
-        id_col = dataset.id_col
-        target = dataset.target
-        ids = df[id_col].tolist()
-        y = df[target].tolist()
-        transform = self.s["processing_scheme"].get("transform_labels")
-        y = digitize_labels(y, transform)
+        ids = dataset.data[dataset.id_col].tolist()
+        y = dataset.data[dataset.target].tolist()
         y = [int(val) for val in y]
         y_dict = {}
         for i, y in zip(ids, y):
             y_dict[i] = y
-        self.y = y_dict
+        self.y_dict = y_dict
 
-    def score_LPOCV(self, gmt_path=None):
-        outfolder = get_outdir_path(self.s)
-        if gmt_path:
+    def get_intersect():
+        pass
+
+
+class ScoreLPOCV(Scorer):
+    def __init__(self, settings=None):
+        super().__init__(settings=settings)
+        pass
+
+    def score_LPOCV(self, gmt=None):
+        outfolder = get_outdir_path(self.settings)
+        if gmt:
+            self.annotations['gmt'] = gmt.suffix
             outfolder += 'hypothesis_predictions/'
             check_or_create_dir(outfolder)
-            gmt = GMT(gmt_path)
             bg_runs = [gmt.suffix + '.csv']
         else:
             outfolder += 'background_predictions/'
             check_or_create_dir(outfolder)
             bg_runs = os.listdir(outfolder)
             bg_runs = [x for x in bg_runs if '.csv' in x]
-        syn = synapseclient.login()
-        folder_synid = get_or_create_syn_folder(syn,
-                                                outfolder,
-                                                self.s['project_synid'],
-                                                create=False)
-        q = syn.chunkedQuery('SELECT * FROM file WHERE parentId==\"' +
-                             folder_synid + '\"')
-        qlist = [x for x in q]
-        for f in qlist:
-            syn.get(f['file.id'], downloadLocation=outfolder,
-                    ifcollision="overwrite.local")
         auc_dict_list = []
         bg_runs = os.listdir(outfolder)
         for fn in tqdm(bg_runs):
@@ -69,7 +55,7 @@ class Scorer(object):
             pairs = recursivedict()
             for p_idx in pair_idx:
                 df_0 = df[df['pair_index'] == p_idx]
-                y_true = [self.y[x] for x in df_0['ID'].tolist()]
+                y_true = [self.y_dict[x] for x in df_0['ID'].tolist()]
                 for col_n in col_numbers:
                     y_pred = df_0[col_n].tolist()
                     y_pred_sorted = [x for _, x in
@@ -85,7 +71,7 @@ class Scorer(object):
                     pairs[col_n][p_idx] = auc
             out = pd.DataFrame(pairs)
             cols = out.columns.tolist()
-            if not gmt_path:
+            if not self.annotations.get('gmt'):
                 out = out.rename(columns={a: int(a) for a in cols})
             cols = out.columns.tolist()
             out = out[list(sorted(cols))]
@@ -93,46 +79,26 @@ class Scorer(object):
             auc_dict_list.append(out)
         auc_df = pd.DataFrame(auc_dict_list)
         cols = auc_df.columns.tolist()
-        if not gmt_path:
+        if not self.annotations.get('gmt'):
             auc_df = auc_df.rename(columns={a: int(a) for a in cols})
         cols = auc_df.columns.tolist()
         auc_df = auc_df[list(sorted(cols))]
         outfolder = "/".join(outfolder.split('/')[:-2] + ['score', ''])
         check_or_create_dir(outfolder)
-        folder_synid = get_or_create_syn_folder(syn,
-                                                outfolder,
-                                                self.s['project_synid'])
-        annotations = get_settings_annotations(self.s)
-        annotations['btr_file_type'] = 'score'
-        annotations['score_metric'] = 'AUC'
-        if gmt_path:
+        self.annotations['btr_file_type'] = 'score'
+        self.annotations['score_metric'] = 'AUC'
+        if self.annotations.get('gmt'):
             filepath = outfolder + gmt.suffix + '_auc.csv'
-            annotations['score_type'] = 'hypothesis'
-            annotations['gmt'] = gmt.suffix
+            self.annotations['score_type'] = 'hypothesis'
+            self.annotations['gmt'] = gmt.suffix
         else:
             filepath = outfolder + 'background_auc.csv'
-            annotations['score_type'] = 'hypothesis'
+            self.annotations['score_type'] = 'hypothesis'
         auc_df.to_csv(filepath, index=False)
-        file = File(path=filepath, parent=folder_synid)
-        file.annotations = annotations
-        file = get_or_create_syn_entity(file, syn, skipget=True)
 
-    def get_stats(self, gmt_path):
-        folder = get_outdir_path(self.s) + 'score/'
+    def get_stats(self, gmt=None, dataset=None):
+        folder = get_outdir_path(self.settings) + 'score/'
         check_or_create_dir(folder)
-        syn = synapseclient.login()
-        folder_synid = get_or_create_syn_folder(syn,
-                                                folder,
-                                                self.s['project_synid'],
-                                                create=True)
-        q = syn.chunkedQuery('SELECT * FROM file WHERE parentId==\"' +
-                             folder_synid + '\"')
-        qlist = [x for x in q]
-        for f in qlist:
-            syn.get(f['file.id'], downloadLocation=folder,
-                    ifcollision="overwrite.local")
-        gmt = GMT(gmt_path)
-        dataset = Dataset(self.s)
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
         background = pd.read_csv(folder + 'background_auc.csv')
         bcg_cols = background.columns.tolist()
@@ -169,17 +135,8 @@ class Scorer(object):
                                'AUC', 'p_value', 'adjusted_p']]
         folder = "/".join(folder.split('/')[:-2] + ['stats', ''])
         check_or_create_dir(folder)
-        folder_synid = get_or_create_syn_folder(syn,
-                                                folder,
-                                                self.s['project_synid'],
-                                                create=True)
         filepath = folder + gmt.suffix + '_stats.csv'
         df_scores.to_csv(filepath, index=False)
-        annotations = get_settings_annotations(self.s)
-        annotations['btr_file_type'] = 'stats'
-        annotations['score_metric'] = 'AUC'
-        annotations['gmt'] = gmt.suffix
-        file = File(path=filepath, parent=folder_synid)
-        file.annotations = annotations
-        file = get_or_create_syn_entity(file, syn, skipget=True)
-
+        self.annotations['btr_file_type'] = 'stats'
+        self.annotations['score_metric'] = 'AUC'
+        self.annotations['gmt'] = gmt.suffix
