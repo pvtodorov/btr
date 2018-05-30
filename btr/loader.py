@@ -93,7 +93,8 @@ class Loader(object):
         remotefile = get_or_create_syn_entity(localfile, self.syn,
                                               skipget=False,
                                               returnid=False)
-        md5 = get_settings_md5(self.settings)
+        self.get_annotations()
+        md5 = self.annotations['settings_md5']
         if [md5] == remotefile.annotations.get('settings_md5'):
             print('Local settings file and remote have the same md5 hashes.')
         else:
