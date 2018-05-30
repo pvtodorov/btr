@@ -70,6 +70,17 @@ class Loader(object):
         else:
             raise NotImplementedError
 
+    def get_annotations(self):
+        self.annotations = {}
+        self.annotations = get_settings_annotations(self.settings)
+        to_update = {'dataset.': self.dataset,
+                     'processor.': self.proc}
+        for prefix, obj in to_update.items():
+            flat_settings = flatten_settings(obj.settings, prefix)
+            self.annotations.update(flat_settings)
+            flat_annotations = flatten_settings(obj.annotations, prefix)
+            self.annotations.update(flat_annotations)
+
     def save_settings_to_synapse(self, settings_path, overwrite=False):
         """Saves prediction to Synapse"""
         if not self.syn:
