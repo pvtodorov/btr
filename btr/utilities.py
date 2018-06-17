@@ -1,10 +1,10 @@
-import uuid
-import os
-from collections import defaultdict
-import json
-import subprocess
-import importlib
 import hashlib
+import importlib
+import json
+import os
+import subprocess
+import uuid
+from collections import defaultdict
 import morph
 
 
@@ -75,3 +75,13 @@ def get_settings_annotations(settings):
     annotations.update(flatten_settings(settings))
     annotations.update({'settings_md5': get_settings_md5(settings)})
     return annotations
+
+
+def load_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+def save_json(json, path):
+    with open(path, 'w') as outfile:
+        json.dump(json, outfile)

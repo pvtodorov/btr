@@ -1,10 +1,12 @@
-import pandas as pd
-from tqdm import tqdm
 import os
+
 import numpy as np
+import pandas as pd
 from statsmodels.sandbox.stats.multicomp import multipletests
-from .utilities import (recursivedict, get_outdir_path, check_or_create_dir)
+from tqdm import tqdm
+
 from .processing_schemes import Processor
+from .utilities import check_or_create_dir, get_outdir_path, recursivedict
 
 
 class Scorer(Processor):

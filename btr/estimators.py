@@ -1,6 +1,6 @@
 from mord import LogisticAT
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 def get_estimator(settings):

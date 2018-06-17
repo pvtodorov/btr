@@ -1,7 +1,7 @@
 import argparse
-from .loader import Loader
-# from .score import Scorer
+
 from .gmt import GMT
+from .loader import Loader
 
 
 def predict():

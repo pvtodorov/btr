@@ -1,13 +1,11 @@
-import json
-from .processing_schemes import LPOCV
-import synapseclient
-import synapseutils
-from synapseclient import File, Folder
-from .utilities import (flatten_settings, get_settings_annotations)
-from .gmt import GMT
-from .dataset import Dataset
-from .scorer import ScoreLPOCV
 from pprint import pprint
+
+from .dataset import Dataset
+from .gmt import GMT
+from .processing_schemes import LPOCV
+from .scorer import ScoreLPOCV
+from .utilities import (flatten_settings, get_btr_version_info,
+                        get_settings_annotations, load_json)
 
 
 class Loader(object):
