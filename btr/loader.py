@@ -72,6 +72,7 @@ class Loader(object):
     def get_annotations(self):
         self.annotations = {}
         self.annotations = get_settings_annotations(self.settings)
+        self.annotations.update(get_btr_version_info())
         to_update = {'dataset.': self.dataset,
                      'processor.': self.proc}
         for prefix, obj in to_update.items():
