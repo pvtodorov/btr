@@ -29,10 +29,40 @@ class Predictor(Processor):
             self.get_estimator(self.settings.get('estimator'))
         self.uuid = get_uuid()
         self.annotations['uuid'] = str(self.uuid)
+        self.df_result = pd.DataFrame()
 
     def get_estimator(self, estimator_settings=None):
         if estimator_settings:
             self.estimator = get_estimator(estimator_settings)
+
+    def predict(self, gmt=None):
+        if gmt:
+            self.annotations['prediction_type'] = 'hypothesis'
+            self.annotations['gmt'] = gmt.suffix
+        else:
+            self.annotations['prediction_type'] = 'background'
+            self.annotations['uuid_time_low'] = self.uuid.time_low
+
+    def save_results(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        outdir_path = get_outdir_path(self.settings)
+        if self.annotations['prediction_type'] == 'hypothesis':
+            outdir_path += 'hypothesis_predictions/'
+        else:
+            outdir_path += 'background_predictions/'
+        check_or_create_dir(outdir_path)
+        outfile_name = self.annotations.get('gmt', str(self.uuid))
+        self.results_path = outdir_path + outfile_name + '.csv'
+        self.df_result.to_csv(self.results_path, index=False)
+        annotations_dir = outdir_path + '.annotations/'
+        check_or_create_dir(annotations_dir)
+        self.annotations_path = annotations_dir + outfile_name + '.json'
+        save_json(self.annotations, self.annotations_path)
 
 
 class LPOCV(Predictor):
@@ -46,7 +76,6 @@ class LPOCV(Predictor):
     def __init__(self, settings=None, dataset=None):
         super().__init__(settings=settings, dataset=dataset)
         self.selected_pairs = []
-        self.df_result = pd.DataFrame()
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
 
@@ -56,40 +85,19 @@ class LPOCV(Predictor):
         Reads in lists of features from a `gmt` or a random feature list for
         background and uses them to fit a model and make a predictions
         """
+        super().predict(gmt=gmt)
         if gmt:
-            self.annotations['prediction.type'] = 'hypothesis'
-            self.annotations['gmt'] = gmt.suffix
             data_cols = self.dataset.data_cols
             for link, _, gene_list, _ in tqdm(gmt.generate(data_cols),
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
         else:
-            self.annotations['prediction.type'] = 'background'
             sampling_range = get_sampling_range(self.settings)
-            uuid_tl = self.uuid.time_low
-            self.annotations['uuid.time_low'] = uuid_tl
             for k in tqdm(sampling_range):
-                gene_list = self.dataset.sample_data_cols(k, uuid_tl)
+                gene_list = self.dataset.sample_data_cols(k,
+                                                          self.uuid.time_low)
                 self._build_bcg_predictions(gene_list, k)
         self._build_df_result()
-
-    def save_results(self):
-        """Saves prediction results as csv files.
-
-        Random gene set predictions are placed in `background_predictions/`
-        Gene set predictions are place in `hypothesis_predictions/`
-        """
-        self._outdir_path = get_outdir_path(self.settings)
-        if self.annotations['prediction.type'] == 'hypothesis':
-            self._outdir_path += 'hypothesis_predictions/'
-        else:
-            self._outdir_path += 'background_predictions/'
-        check_or_create_dir(self._outdir_path)
-        if self.gmt:
-            name = self.annotations.get('gmt', str(self.uuid))
-        self._outfile_name = get_outfile_name(name)
-        results_path = self._outdir_path + self._outfile_name
-        self.df_result.to_csv(results_path, index=False)
 
     def _build_bcg_predictions(self, selected_cols, k):
         """Performs LPOCV and updates the Processor's `_bcg_predictions` dict
