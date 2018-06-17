@@ -57,16 +57,16 @@ def flatten_settings(settings, prefix=''):
     return flat_settings
 
 
-def get_version_info():
+def get_btr_version_info():
     version_info = {}
     package_path = importlib.util.find_spec('btr').origin[:-15]
     origin = subprocess.check_output(["git", "-C", package_path, "config",
                                       "--get", "remote.origin.url"]).decode()
-    version_info['github_origin'] = origin
+    version_info['btr.github_origin'] = origin
     commit_hash = subprocess.check_output(["git", "-C", package_path,
                                            "rev-parse", "HEAD"])
     commit_hash = commit_hash.strip().decode()
-    version_info['github_commit_hash'] = commit_hash
+    version_info['btr.github_commit_hash'] = commit_hash
     return version_info
 
 
