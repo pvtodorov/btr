@@ -10,22 +10,18 @@ from .utilities import (flatten_settings, get_btr_version_info,
 
 class Loader(object):
     def __init__(self,
-                 settings_path=None, gmt_path=None,
-                 use_synapse=True, syn_settings_overwrite=False,
+                 settings_path=None,
+                 gmt_path=None,
                  pprint_settings=False):
         self.settings = None
         self.dataset = None
         self.proc = None
         self.gmt = None
-        self.syn = None
         self.settings_path = settings_path
         self.gmt_path = gmt_path
         # if a settings_path is provided, automatically load settings
         if self.settings_path:
             self.load_settings(self.settings_path)
-        # if use_synapse True, automatically login
-        if use_synapse:
-            self.login_synapse(overwrite=syn_settings_overwrite)
         if pprint_settings:
             pprint(self.settings)
 
@@ -49,16 +45,18 @@ class Loader(object):
 
     def load_processor(self, task):
         if task == "predict":
-            self.load_predictor(self)
+            self.load_predictor()
         elif task == 'score':
-            self.load_scorer(self)
+            self.load_scorer()
         elif task == "stats":
             raise NotImplementedError
         else:
             raise NotImplementedError
 
-    def load_predictor(self):
+    def load_predictor(self, load_data=True):
         scheme = self.settings['processor']["scheme"]
+        if load_data:
+            self.load_dataset('predict')
         if scheme == 'LPOCV':
             self.proc = LPOCV(settings=self.settings['processor'],
                               dataset=self.dataset)
@@ -72,6 +70,10 @@ class Loader(object):
         else:
             raise NotImplementedError
 
+    def load_statser(self):
+        scheme = self.settings['processor']["scheme"]
+        if scheme == 'LPOCV':
+            pass
         else:
             raise NotImplementedError
 
