@@ -82,6 +82,6 @@ def load_json(path):
         return json.load(f)
 
 
-def save_json(json, path):
+def save_json(d, path):
     with open(path, 'w') as outfile:
-        json.dump(json, outfile)
+        json.dump(d, outfile)
