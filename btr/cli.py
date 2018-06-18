@@ -22,7 +22,7 @@ def predict():
         loader = Loader(settings_path=settings_path)
         loader.load_processor(task)
         loader.proc.predict(gmt=gmt)
-        loader.proc.save_results()
+        loader.save(task)
 
 
 def score():

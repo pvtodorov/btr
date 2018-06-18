@@ -5,7 +5,8 @@ from .gmt import GMT
 from .processing_schemes import LPOCV
 from .scorer import ScoreLPOCV
 from .utilities import (flatten_settings, get_btr_version_info,
-                        get_settings_annotations, load_json)
+                        get_outdir_path, get_settings_annotations, load_json,
+                        save_json, check_or_create_dir)
 
 
 class Loader(object):
@@ -86,3 +87,35 @@ class Loader(object):
         for prefix, obj in to_update.items():
             flat_annotations = flatten_settings(obj.annotations, prefix)
             self.annotations.update(flat_annotations)
+
+    def save(self, task):
+        if task == "predict":
+            self._save_results()
+        elif task == 'score':
+            raise NotImplementedError
+        elif task == "stats":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+    def _save_results(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        outdir_path = get_outdir_path(self.settings)
+        if self.proc.annotations['prediction_type'] == 'hypothesis':
+            outdir_path += 'hypothesis_predictions/'
+        else:
+            outdir_path += 'background_predictions/'
+        check_or_create_dir(outdir_path)
+        outfile_name = self.proc.annotations.get('gmt', str(self.proc.uuid))
+        results_path = outdir_path + outfile_name + '.csv'
+        self.proc.df_result.to_csv(results_path, index=False)
+        annotations_dir = outdir_path + '.annotations/'
+        check_or_create_dir(annotations_dir)
+        annotations_path = annotations_dir + outfile_name + '.json'
+        self.get_annotations()
+        save_json(self.annotations, annotations_path)

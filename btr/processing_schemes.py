@@ -4,8 +4,7 @@ from tqdm import tqdm
 
 from .estimators import get_estimator
 from .pairs_processor import PairsProcessor
-from .utilities import (check_or_create_dir, get_outdir_path, get_uuid,
-                        recursivedict, save_json)
+from .utilities import get_uuid, recursivedict
 
 
 class Processor(object):
@@ -42,27 +41,6 @@ class Predictor(Processor):
         else:
             self.annotations['prediction_type'] = 'background'
             self.annotations['uuid_time_low'] = self.uuid.time_low
-
-    def save_results(self):
-        """Saves prediction results (csv) and annotations (json)
-
-        Random gene set predictions are placed in `background_predictions/`
-        Gene set predictions are place in `hypothesis_predictions/`
-        Each of these gets its own subfolder of `.annotations/`
-        """
-        outdir_path = get_outdir_path(self.settings)
-        if self.annotations['prediction_type'] == 'hypothesis':
-            outdir_path += 'hypothesis_predictions/'
-        else:
-            outdir_path += 'background_predictions/'
-        check_or_create_dir(outdir_path)
-        outfile_name = self.annotations.get('gmt', str(self.uuid))
-        self.results_path = outdir_path + outfile_name + '.csv'
-        self.df_result.to_csv(self.results_path, index=False)
-        annotations_dir = outdir_path + '.annotations/'
-        check_or_create_dir(annotations_dir)
-        self.annotations_path = annotations_dir + outfile_name + '.json'
-        save_json(self.annotations, self.annotations_path)
 
 
 class LPOCV(Predictor):
