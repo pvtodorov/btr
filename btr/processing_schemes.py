@@ -100,7 +100,8 @@ class LPOCV(Predictor):
                 try:
                     predictions = e.predict_proba(X_test)
                 except AttributeError as err:
-                    if "has no attribute 'predict_proba'" in err.args[0]:
+                    me = "'LogisticAT' object has no attribute 'predict_proba'"
+                    if me == err.args[0]:
                         predictions = e.predict(X_test)
                         predictions = np.array([[x, 1 - x]
                                                 for x in predictions])
