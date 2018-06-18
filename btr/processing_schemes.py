@@ -119,27 +119,34 @@ class LPOCV(Predictor):
                 y_train = np.array(y_train)
                 e = self.estimator
                 e = e.fit(X_train, y_train)
-                if self.settings["estimator"].get("call") == "probability":
-                    predictions = e.predict_proba(X_test)[:, 1]
-                else:
-                    predictions = e.predict(X_test)
+                try:
+                    predictions = e.predict_proba(X_test)
+                except AttributeError as err:
+                    if "has no attribute 'predict_proba'" in err.args[0]:
+                        predictions = e.predict(X_test)
+                        predictions = np.array([[x, 1 - x]
+                                                for x in predictions])
                 for i_s, p in zip(pair_ids, predictions):
-                    self._bcg_predictions[pair_index][i_s][k] = p
+                    for c, p_c in enumerate(p):
+                        self._bcg_predictions[pair_index][c][i_s][k] = p_c
 
     def _build_df_result(self):
         """Produces a dataframe from `self._bcg_predictions`"""
-        for pair_index, p in self._bcg_predictions.items():
-            df_result_t = pd.DataFrame(p)
-            df_result_t = df_result_t.transpose()
-            df_result_t = df_result_t.reset_index()
-            df_result_t = df_result_t.rename(columns={'index': 'ID'})
-            df_result_t['pair_index'] = pair_index
-            df_result_t_cols = df_result_t.columns.tolist()
-            df_result_t_cols = sorted([x for x in df_result_t_cols
-                                       if x not in ['ID', 'pair_index']])
-            df_result_t_cols = ['ID', 'pair_index'] + df_result_t_cols
-            df_result_t = df_result_t[df_result_t_cols]
-            self.df_result = self.df_result.append(df_result_t)
+        for pair_index, d1 in self._bcg_predictions.items():
+            for cl, d2 in d1.items():
+                df_result_t = pd.DataFrame(d2)
+                df_result_t = df_result_t.transpose()
+                df_result_t = df_result_t.reset_index()
+                df_result_t = df_result_t.rename(columns={'index': 'ID'})
+                df_result_t['pair_index'] = pair_index
+                df_result_t['class'] = cl
+                df_result_t_cols = df_result_t.columns.tolist()
+                str_cols = ['ID', 'pair_index', 'class']
+                df_result_t_cols = sorted([x for x in df_result_t_cols
+                                           if x not in str_cols])
+                df_result_t_cols = str_cols + df_result_t_cols
+                df_result_t = df_result_t[df_result_t_cols]
+                self.df_result = self.df_result.append(df_result_t)
 
     def _get_pairs(self):
         pairs_proc = PairsProcessor(self.dataset,
