@@ -33,12 +33,14 @@ def score():
                         help="path to file or folder of txts", required=False)
     args = parser.parse_args()
     settings_path = args.settings_path
-    loader = Loader(settings_path=settings_path, use_synapse=False)
+    gmt_path = args.gmt_path
+    loader = Loader(settings_path=settings_path)
     loader.load_dataset(task)
     loader.load_processor(task)
-    loader.load_gmt(args.gmt_path)
+    if gmt_path:
+        loader.load_gmt(args.gmt_path)
     loader.proc.get_y_dict(loader.dataset)
-    loader.proc.get_score()
+    loader.proc.get_score(gmt=loader.gmt)
 
 
 # def stats():

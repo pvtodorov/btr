@@ -26,7 +26,7 @@ class Scorer(Processor):
             y_dict[i] = y
         self.y_dict = y_dict
 
-    def get_intersect():
+    def get_score(self, gmt=None):
         pass
 
 
@@ -35,42 +35,22 @@ class ScoreLPOCV(Scorer):
         super().__init__(settings=settings)
         pass
 
-    def score_LPOCV(self, gmt=None):
-        outfolder = get_outdir_path(self.settings)
+    def get_score(self, gmt=None):
+        infolder = get_outdir_path(self.settings)
         if gmt:
             self.annotations['gmt'] = gmt.suffix
-            outfolder += 'hypothesis_predictions/'
-            check_or_create_dir(outfolder)
-            bg_runs = [gmt.suffix + '.csv']
+            infolder += 'hypothesis_predictions/'
+            check_or_create_dir(infolder)
+            file_names = [gmt.suffix + '.csv']
         else:
-            outfolder += 'background_predictions/'
-            check_or_create_dir(outfolder)
-            bg_runs = os.listdir(outfolder)
-            bg_runs = [x for x in bg_runs if '.csv' in x]
+            infolder += 'background_predictions/'
+            check_or_create_dir(infolder)
+            file_names = os.listdir(infolder)
+            file_names = [x for x in file_names if '.csv' in x]
         auc_dict_list = []
-        bg_runs = os.listdir(outfolder)
-        for fn in tqdm(bg_runs):
-            df = pd.read_csv(outfolder + fn)
-            pair_idx = df['pair_index'].unique().tolist()
-            col_numbers = [x for x in df.columns.tolist()
-                           if x not in ['ID', 'pair_index']]
-            pairs = recursivedict()
-            for p_idx in pair_idx:
-                df_0 = df[df['pair_index'] == p_idx]
-                y_true = [self.y_dict[x] for x in df_0['ID'].tolist()]
-                for col_n in col_numbers:
-                    y_pred = df_0[col_n].tolist()
-                    y_pred_sorted = [x for _, x in
-                                     sorted(zip(y_true, y_pred),
-                                            key=lambda y: y[0])]
-                    lo, hi = y_pred_sorted[0], y_pred_sorted[1]
-                    if lo == hi:
-                        auc = 0.5
-                    elif lo < hi:
-                        auc = 1
-                    else:
-                        auc = 0
-                    pairs[col_n][p_idx] = auc
+        for fn in tqdm(file_names):
+            df = pd.read_csv(infolder + fn)
+            pairs = get_pair_auc_dict(df, self.y_dict)
             out = pd.DataFrame(pairs)
             cols = out.columns.tolist()
             if not self.annotations.get('gmt'):
@@ -85,7 +65,7 @@ class ScoreLPOCV(Scorer):
             auc_df = auc_df.rename(columns={a: int(a) for a in cols})
         cols = auc_df.columns.tolist()
         auc_df = auc_df[list(sorted(cols))]
-        outfolder = "/".join(outfolder.split('/')[:-2] + ['score', ''])
+        outfolder = "/".join(infolder.split('/')[:-2] + ['score', ''])
         check_or_create_dir(outfolder)
         self.annotations['btr_file_type'] = 'score'
         self.annotations['score_metric'] = 'AUC'
@@ -142,3 +122,45 @@ class ScoreLPOCV(Scorer):
         self.annotations['btr_file_type'] = 'stats'
         self.annotations['score_metric'] = 'AUC'
         self.annotations['gmt'] = gmt.suffix
+
+
+def get_pair_auc_dict(df, y_dict):
+    pair_auc_dict = recursivedict()
+    predict_meta_cols = ['ID', 'pair_index', 'class']
+    predict_data_cols = [x for x in df.columns.tolist()
+                         if x not in predict_meta_cols]
+    for col in predict_data_cols:
+        cols_f = predict_meta_cols + [col]
+        df_t = df.loc[:, :]
+        df_t = df_t.loc[:, cols_f]
+        df_t.loc[:, 'true'] = [y_dict[x] for x in df_t['ID']]
+        df_t.sort_values(cols_f,
+                         ascending=[True, True, False, True],
+                         inplace=True)
+        df_t.drop_duplicates(subset=['ID', 'pair_index'],
+                             keep='first',
+                             inplace=True)
+        pair_idx_list = list(set(df_t['pair_index'].tolist()))
+        for pair_idx in pair_idx_list:
+            # import pdb; pdb.set_trace();
+            df_p = df_t.loc[df_t['pair_index'] == pair_idx, :]
+            sample_class_list = df_p['class'].tolist()
+            lo = sample_class_list[0]
+            hi = sample_class_list[1]
+            if lo == hi:
+                probabilities_list = df_p[col].tolist()
+                lo = probabilities_list[0]
+                hi = probabilities_list[1]
+            auc = calculate_pair_auc(lo, hi)
+            pair_auc_dict[col][pair_idx] = auc
+    return pair_auc_dict
+
+
+def calculate_pair_auc(lo, hi):
+    if lo == hi:
+        auc = 0.5
+    elif lo < hi:
+        auc = 1
+    else:
+        auc = 0
+    return auc
