@@ -131,7 +131,7 @@ def get_pair_auc_dict(df, y_dict):
                          if x not in predict_meta_cols]
     for col in predict_data_cols:
         cols_f = predict_meta_cols + [col]
-        df_t = df.loc[:, :]
+        df_t = df.loc[:, :].copy()
         df_t = df_t.loc[:, cols_f]
         df_t.loc[:, 'true'] = [y_dict[x] for x in df_t['ID']]
         df_t.sort_values(cols_f,
