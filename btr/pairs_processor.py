@@ -24,9 +24,6 @@ class PairsProcessor(object):
         self._used_ids = {x: 0 for x in self._sample_list}
         self._seed = pair_settings.get("seed")
         self._prng = np.random.RandomState(self._seed)
-        shuffle_samples = pair_settings.get("shuffle_samples")
-        if shuffle_samples:
-            self._prng.shuffle(self._sample_list)
         self._sample_list.reverse()
         steps = pair_settings['steps']
         while len(self._sample_list):
