@@ -118,29 +118,32 @@ class ScoreLPOCV(Scorer):
 
 def get_pair_auc_dict(df, y_dict):
     pair_auc_dict = recursivedict()
-    predict_meta_cols = ['ID', 'pair_index', 'class']
+    predict_meta_cols = ['pair_index', 'ID', 'class']
     predict_data_cols = [x for x in df.columns.tolist()
                          if x not in predict_meta_cols]
     for col in predict_data_cols:
         cols_f = predict_meta_cols + [col]
         df_t = df.loc[:, :].copy()
         df_t = df_t.loc[:, cols_f]
-        df_t.loc[:, 'true'] = [y_dict[x] for x in df_t['ID']]
-        df_t.sort_values(cols_f,
-                         ascending=[True, True, False, True],
+        df_t.loc[:, 'true'] = [y_dict[x] for x in df_t.loc[:, 'ID'].tolist()]
+        sort_cols = ['pair_index', 'true', col, 'class']
+        cols_ascending = [True, True, False, True]
+        df_t.sort_values(sort_cols,
+                         ascending=cols_ascending,
                          inplace=True)
         df_t.drop_duplicates(subset=['ID', 'pair_index'],
                              keep='first',
                              inplace=True)
         pair_idx_list = list(set(df_t['pair_index'].tolist()))
         for pair_idx in pair_idx_list:
-            # import pdb; pdb.set_trace();
             df_p = df_t.loc[df_t['pair_index'] == pair_idx, :]
             sample_class_list = df_p['class'].tolist()
             lo = sample_class_list[0]
             hi = sample_class_list[1]
             if lo == hi:
                 probabilities_list = df_p[col].tolist()
+                if lo == 0:
+                    probabilities_list = list(reversed(probabilities_list))
                 lo = probabilities_list[0]
                 hi = probabilities_list[1]
             auc = calculate_pair_auc(lo, hi)
