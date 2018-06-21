@@ -34,11 +34,12 @@ class Predictor(Processor):
         if estimator_settings:
             self.estimator = get_estimator(estimator_settings)
 
-    def predict(self, gmt=None):
+    def predict(self, gmt=None, background_params=None):
         if gmt:
             self.annotations['prediction_type'] = 'hypothesis'
             self.annotations['gmt'] = gmt.suffix
-        else:
+        elif background_params:
+            self.annotations.update(background_params)
             self.annotations['prediction_type'] = 'background'
             self.annotations['uuid_time_low'] = self.uuid.time_low
 
@@ -57,19 +58,19 @@ class LPOCV(Predictor):
         self._bcg_predictions = recursivedict()
         self._pairs_list = []
 
-    def predict(self, gmt=None):
+    def predict(self, gmt=None, background_params=None):
         """Performs a background or hypothesis prediction
 
         Reads in lists of features from a `gmt` or a random feature list for
         background and uses them to fit a model and make a predictions
         """
-        super().predict(gmt=gmt)
+        super().predict(gmt=gmt, background_params=background_params)
         if gmt:
             data_cols = self.dataset.data_cols
             for link, _, gene_list, _ in tqdm(gmt.generate(data_cols),
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
-        else:
+        elif background_params:
             sampling_range = get_sampling_range(self.settings)
             for k in tqdm(sampling_range):
                 gene_list = self.dataset.sample_data_cols(k,

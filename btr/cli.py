@@ -10,17 +10,22 @@ def predict():
                         required=False, default="1")
     parser.add_argument("-g", "--gmt_path",
                         help="path to file or folder of txts", required=False)
+    parser.add_argument("-b", "--background_params_path",
+                        help="path to background", required=False)
     args = parser.parse_args()
     settings_path = args.settings_path
     iterations = int(args.iterations)
     gmt_path = args.gmt_path
-    gmt = None
+    background_params_path = args.background_params_path
     for i in range(0, iterations):
-        if gmt_path:
-            gmt = GMT(gmt_path)
         loader = Loader(settings_path=settings_path)
         loader.load_processor(task)
-        loader.proc.predict(gmt=gmt)
+        if background_params_path:
+            loader.load_background_params(background_params_path)
+            loader.proc.predict(background_params=loader.background_params)
+        elif gmt_path:
+            loader.load_gmt(gmt_path)
+            loader.proc.predict(gmt=loader.gmt)
         loader.save(task)
 
 
