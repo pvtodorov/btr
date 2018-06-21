@@ -1,5 +1,4 @@
 import argparse
-from .gmt import GMT
 from .loader import Loader
 
 
@@ -41,7 +40,7 @@ def score():
         loader.load_gmt(args.gmt_path)
     loader.proc.get_y_dict(loader.dataset)
     loader.proc.get_score(gmt=loader.gmt)
-
+    loader.save(task)
 
 # def stats():
 #     parser = argparse.ArgumentParser()

@@ -6,13 +6,14 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 from tqdm import tqdm
 
 from .processing_schemes import Processor
-from .utilities import check_or_create_dir, get_outdir_path, recursivedict
+from .utilities import recursivedict, get_outdir_path
 
 
 class Scorer(Processor):
     def __init__(self, settings=None):
         super().__init__(settings=settings)
         self.annotations['type'] = 'Scorer'
+        self.df = pd.DataFrame()
         self.y_dict = {}
 
     def get_y_dict(self, dataset):
@@ -40,11 +41,9 @@ class ScoreLPOCV(Scorer):
         if gmt:
             self.annotations['gmt'] = gmt.suffix
             infolder += 'hypothesis_predictions/'
-            check_or_create_dir(infolder)
             file_names = [gmt.suffix + '.csv']
         else:
             infolder += 'background_predictions/'
-            check_or_create_dir(infolder)
             file_names = os.listdir(infolder)
             file_names = [x for x in file_names if '.csv' in x]
         auc_dict_list = []
@@ -65,22 +64,16 @@ class ScoreLPOCV(Scorer):
             auc_df = auc_df.rename(columns={a: int(a) for a in cols})
         cols = auc_df.columns.tolist()
         auc_df = auc_df[list(sorted(cols))]
-        outfolder = "/".join(infolder.split('/')[:-2] + ['score', ''])
-        check_or_create_dir(outfolder)
-        self.annotations['btr_file_type'] = 'score'
         self.annotations['score_metric'] = 'AUC'
         if self.annotations.get('gmt'):
-            filepath = outfolder + gmt.suffix + '_auc.csv'
             self.annotations['score_type'] = 'hypothesis'
             self.annotations['gmt'] = gmt.suffix
         else:
-            filepath = outfolder + 'background_auc.csv'
             self.annotations['score_type'] = 'hypothesis'
-        auc_df.to_csv(filepath, index=False)
+        self.df = auc_df
 
     def get_stats(self, gmt=None, dataset=None):
         folder = get_outdir_path(self.settings) + 'score/'
-        check_or_create_dir(folder)
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
         background = pd.read_csv(folder + 'background_auc.csv')
         bcg_cols = background.columns.tolist()
@@ -116,7 +109,6 @@ class ScoreLPOCV(Scorer):
         df_scores = df_scores[['id', 'description', 'n_genes', 'intersect',
                                'AUC', 'p_value', 'adjusted_p']]
         folder = "/".join(folder.split('/')[:-2] + ['stats', ''])
-        check_or_create_dir(folder)
         filepath = folder + gmt.suffix + '_stats.csv'
         df_scores.to_csv(filepath, index=False)
         self.annotations['btr_file_type'] = 'stats'

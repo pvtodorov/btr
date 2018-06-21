@@ -20,6 +20,7 @@ class Loader(object):
         self.gmt = None
         self.settings_path = settings_path
         self.gmt_path = gmt_path
+        self.backgrounds_params = None
         # if a settings_path is provided, automatically load settings
         if self.settings_path:
             self.load_settings(self.settings_path)
@@ -32,6 +33,10 @@ class Loader(object):
     def load_gmt(self, gmt_path):
         if gmt_path:
             self.gmt = GMT(gmt_path)
+            self.gmt_path = gmt_path
+
+    def load_background_params(self, background_params_path):
+        self.background_params = load_json(background_params_path)
 
     def load_dataset(self, task):
         ds = self.settings['dataset']
@@ -90,15 +95,15 @@ class Loader(object):
 
     def save(self, task):
         if task == "predict":
-            self._save_results()
+            self._save_predictions()
         elif task == 'score':
-            raise NotImplementedError
+            self._save_score()
         elif task == "stats":
             raise NotImplementedError
         else:
             raise NotImplementedError
 
-    def _save_results(self):
+    def _save_predictions(self):
         """Saves prediction results (csv) and annotations (json)
 
         Random gene set predictions are placed in `background_predictions/`
@@ -112,10 +117,33 @@ class Loader(object):
             outdir_path += 'background_predictions/'
         check_or_create_dir(outdir_path)
         outfile_name = self.proc.annotations.get('gmt', str(self.proc.uuid))
-        results_path = outdir_path + outfile_name + '.csv'
-        self.proc.df_result.to_csv(results_path, index=False)
-        annotations_dir = outdir_path + '.annotations/'
-        check_or_create_dir(annotations_dir)
-        annotations_path = annotations_dir + outfile_name + '.json'
+        predictions_path = outdir_path + outfile_name + '.csv'
+        self.proc.df_result.to_csv(predictions_path, index=False)
         self.get_annotations()
-        save_json(self.annotations, annotations_path)
+        save_annotations(self.annotations, predictions_path)
+
+    def _save_score(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        infolder = get_outdir_path(self.settings)
+        outfolder = "/".join(infolder.split('/')[:-1] + ['score', ''])
+        check_or_create_dir(outfolder)
+        file_name = self.proc.annotations.get('gmt', 'background')
+        score_path = outfolder + file_name + '_auc.csv'
+        self.proc.df.to_csv(score_path, index=False)
+        self.get_annotations()
+        save_annotations(self.annotations, score_path)
+
+
+def save_annotations(annotations_dict, filepath):
+    output_file = filepath.split('/')[-1]
+    output_dir = filepath[:-len(output_file)]
+    file_name = output_file[:-4]
+    annotations_dir = output_dir + '.annotations/'
+    annotations_filepath = annotations_dir + file_name + '.json'
+    check_or_create_dir(annotations_dir)
+    save_json(annotations_dict, annotations_filepath)
