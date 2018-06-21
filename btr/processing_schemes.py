@@ -71,7 +71,7 @@ class LPOCV(Predictor):
                                               total=len(gmt.gmt)):
                 self._build_bcg_predictions(gene_list, link)
         elif background_params:
-            sampling_range = get_sampling_range(self.settings)
+            sampling_range = get_sampling_range(background_params)
             for k in tqdm(sampling_range):
                 gene_list = self.dataset.sample_data_cols(k,
                                                           self.uuid.time_low)
