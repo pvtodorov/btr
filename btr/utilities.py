@@ -72,7 +72,7 @@ def get_btr_version_info():
 
 def get_settings_annotations(settings):
     annotations = {}
-    annotations.update(flatten_settings(settings))
+    annotations.update(flatten_settings(settings, 'settings.'))
     annotations.update({'settings_md5': get_settings_md5(settings)})
     return annotations
 
