@@ -38,7 +38,10 @@ class PairsProcessor(object):
 
     def _perform_step(self, step):
         operation = step['operation']
-        if operation == "contains_sample":
+        if operation == "shuffle":
+            self._pairs_list_f = _pair_op_shuffle(self._pairs_list_f,
+                                                  self._prng)
+        elif operation == "contains_sample":
             self._pairs_list_f = _pair_op_contains_sample(self._pairs_list_f,
                                                           self._sample)
         elif operation == "diff_target":
@@ -67,6 +70,13 @@ class PairsProcessor(object):
         del self._prng
         del self._sample
         del self._pairs_list_f
+
+
+def _pair_op_shuffle(pairs_list, prng):
+    """Returns pairs_list that contains the sample"""
+    pairs_list_f = [x for x in pairs_list]
+    prng.shuffle(pairs_list_f)
+    return pairs_list_f
 
 
 def _pair_op_contains_sample(pairs_list, sample):
