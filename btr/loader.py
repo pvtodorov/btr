@@ -55,7 +55,7 @@ class Loader(object):
         elif task == 'score':
             self.load_scorer()
         elif task == "stats":
-            raise NotImplementedError
+            self.load_scorer()
         else:
             raise NotImplementedError
 
@@ -99,7 +99,7 @@ class Loader(object):
         elif task == 'score':
             self._save_score()
         elif task == "stats":
-            raise NotImplementedError
+            self._save_stats()
         else:
             raise NotImplementedError
 
@@ -134,6 +134,23 @@ class Loader(object):
         check_or_create_dir(outfolder)
         file_name = self.proc.annotations.get('gmt', 'background')
         score_path = outfolder + file_name + '_auc.csv'
+        self.proc.df.to_csv(score_path, index=False)
+        self.get_annotations()
+        save_annotations(self.annotations, score_path)
+
+    def _save_stats(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        infolder = get_outdir_path(self.settings)
+        outfolder = "/".join(infolder.split('/')[:-1] + ['stats', ''])
+        check_or_create_dir(outfolder)
+        file_name = self.proc.annotations.get('gmt', 'background')
+        score_path = outfolder + file_name + '_auc.csv'
+        print(score_path)
         self.proc.df.to_csv(score_path, index=False)
         self.get_annotations()
         save_annotations(self.annotations, score_path)

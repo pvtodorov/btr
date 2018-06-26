@@ -110,10 +110,13 @@ class ScoreLPOCV(Scorer):
                                'AUC', 'p_value', 'adjusted_p']]
         folder = "/".join(folder.split('/')[:-2] + ['stats', ''])
         filepath = folder + gmt.suffix + '_stats.csv'
-        df_scores.to_csv(filepath, index=False)
-        self.annotations['btr_file_type'] = 'stats'
-        self.annotations['score_metric'] = 'AUC'
-        self.annotations['gmt'] = gmt.suffix
+        self.df = df_scores
+        self.annotations['stats_metric'] = 'AUC'
+        if self.annotations.get('gmt'):
+            self.annotations['stats_type'] = 'hypothesis'
+            self.annotations['gmt'] = gmt.suffix
+        else:
+            self.annotations['stats_type'] = 'background'
 
 
 def get_pair_auc_dict(df, y_dict):
