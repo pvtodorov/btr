@@ -69,7 +69,7 @@ class ScoreLPOCV(Scorer):
             self.annotations['score_type'] = 'hypothesis'
             self.annotations['gmt'] = gmt.suffix
         else:
-            self.annotations['score_type'] = 'hypothesis'
+            self.annotations['score_type'] = 'background'
         self.df = auc_df
 
     def get_stats(self, gmt=None, dataset=None):
