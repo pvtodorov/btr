@@ -39,27 +39,27 @@ class PairsProcessor(object):
     def _perform_step(self, step):
         operation = step['operation']
         if operation == "shuffle":
-            self._pairs_list_f = _pair_op_shuffle(self._pairs_list_f,
-                                                  self._prng)
+            self._pairs_list_f = _shuffle(self._pairs_list_f, self._prng)
         elif operation == "contains_sample":
-            self._pairs_list_f = _pair_op_contains_sample(self._pairs_list_f,
-                                                          self._sample)
+            self._pairs_list_f = _contains_sample(self._pairs_list_f,
+                                                  self._sample)
         elif operation == "diff_target":
-            self._pairs_list_f = _pair_op_diff_target(self._pairs_list_f)
+            self._pairs_list_f = _diff_target(self._pairs_list_f)
         elif operation == "unique_pair":
-            self._pairs_list_f = _pair_op_unique_pair(self._pairs_list_f,
-                                                      self.selected_pairs)
+            self._pairs_list_f = _unique_pair(self._pairs_list_f,
+                                              self.selected_pairs)
         elif operation == "unique_ids":
-            self._pairs_list_f = _pair_op_unique_ids(self._pairs_list_f,
-                                                     self._used_ids)
+            self._pairs_list_f = _unique_ids(self._pairs_list_f,
+                                             self._used_ids)
         elif operation == "min_id_reuse":
-            self._pairs_list_f = _pair_op_min_id_reuse(self._pairs_list_f,
-                                                       self._used_ids)
+            self._pairs_list_f = _min_id_reuse(self._pairs_list_f,
+                                               self._used_ids)
         elif operation == "min_confounder":
-            self._pairs_list_f = _pair_op_min_confounder(self._pairs_list_f)
+            self._pairs_list_f = _min_cnfd(self._pairs_list_f,
+                                           self.selected_pairs)
         elif operation == "pick_one":
-            self._pairs_list_f = _pair_op_pick_one(self._pairs_list_f,
-                                                   self._prng)
+            self._pairs_list_f = _pick_one(self._pairs_list_f,
+                                           self._prng)
         elif operation == "take_all":
             self._pairs_list_f = self._pairs_list_f
 
@@ -72,35 +72,35 @@ class PairsProcessor(object):
         del self._pairs_list_f
 
 
-def _pair_op_shuffle(pairs_list, prng):
+def _shuffle(pairs_list, prng):
     """Returns pairs_list that contains the sample"""
     pairs_list_f = [x for x in pairs_list]
     prng.shuffle(pairs_list_f)
     return pairs_list_f
 
 
-def _pair_op_contains_sample(pairs_list, sample):
+def _contains_sample(pairs_list, sample):
     """Returns pairs_list that contains the sample"""
     pairs_list_f = [x for x in pairs_list
                     if sample in [x[0][0], x[1][0]]]
     return pairs_list_f
 
 
-def _pair_op_diff_target(pairs_list):
+def _diff_target(pairs_list):
     """Return pairs list filtered so target value is different"""
     pairs_list_f = [x for x in pairs_list
                     if x[0][1] != x[1][1]]
     return pairs_list_f
 
 
-def _pair_op_unique_pair(pairs_list, used_pairs):
+def _unique_pair(pairs_list, used_pairs):
     """Return pairs_list that does not contain previously used pairs"""
     pairs_list_f = [x for x in pairs_list
                     if x not in used_pairs]
     return pairs_list_f
 
 
-def _pair_op_unique_ids(pairs_list, used_ids):
+def _unique_ids(pairs_list, used_ids):
     """Return pairs_list that does not contain previously used ids"""
     pairs_list_f = [x for x in pairs_list
                     if ((used_ids[x[0][0]] == 0) and
@@ -108,7 +108,7 @@ def _pair_op_unique_ids(pairs_list, used_ids):
     return pairs_list_f
 
 
-def _pair_op_min_id_reuse(pairs_list, used_ids):
+def _min_id_reuse(pairs_list, used_ids):
     """Return pairs_list that has least used ids"""
     scored_pairs_list = []
     for pair in pairs_list:
@@ -122,22 +122,50 @@ def _pair_op_min_id_reuse(pairs_list, used_ids):
     return pairs_list_f
 
 
-def _pair_op_min_confounder(pairs_list):
-    """Return pairs_list with minimal confounder difference"""
+def _min_cnfd(pairs_list, selected_pairs):
+    """Return pairs_list with minimal cnfdounder difference"""
     scored_pairs_list = []
     for pair in pairs_list:
-        confounder_diff = abs(pair[0][2] - pair[1][2])
-        scored_pair = (pair, confounder_diff)
+        cnfd_diff = abs(pair[0][2] - pair[1][2])
+        scored_pair = (pair, cnfd_diff)
         scored_pairs_list.append(scored_pair)
-    min_score = min([x[1] for x in scored_pairs_list])
+    min_score = np.min([x[1] for x in scored_pairs_list])
     pairs_list_f = [x[0] for x in scored_pairs_list if x[1] == min_score]
+    pairs_list_f = _min_cnfd_check_selected(pairs_list_f, selected_pairs)
     return pairs_list_f
 
 
-def _pair_op_pick_one(pairs_list, prng):
+def _min_cnfd_check_selected(pairs_list, selected_pairs):
+    """Return pairs where IDs aren't represented and smaller confound diff"""
+    exclude_pairs = []
+    for pair in pairs_list:
+        cnfd_diff = np.abs(pair[0][2] - pair[1][2])
+        pair_samples = [pair[0][0], pair[1][0]]
+        selected_samples = get_sample_list(selected_pairs)
+        # check if both ids are already among selected samples
+        if len([x for x in selected_samples if x in pair_samples]) == 2:
+            for sample in pair_samples:
+                sel_pairs_f = _contains_sample(selected_pairs, sample)
+                # check if the current lowest confounder diff for a particular
+                # sample is already smaller. if so, exlcude the pairs
+                # containing that sample in the current selection
+                sel_pairs_cnfd_diff = np.min([np.abs(x[0][2] - x[1][2])
+                                              for x in sel_pairs_f])
+                if cnfd_diff <= sel_pairs_cnfd_diff:
+                    exclude_pairs.append(pair)
+    exclude_pairs = list(set(exclude_pairs))
+    pairs_list_f = [x for x in pairs_list if x not in exclude_pairs]
+    return pairs_list_f
+
+
+def _pick_one(pairs_list, prng):
     """Return pairs_list with minimal confounder difference"""
-    pair = pairs_list[prng.choice(len(pairs_list)) - 1]
-    return [pair]
+    if len(pairs_list):
+        pair = pairs_list[prng.choice(len(pairs_list)) - 1]
+        pairs_list_f = [pair]
+    else:
+        pairs_list_f = []
+    return pairs_list_f
 
 
 def get_all_pairs(dataset):
@@ -145,11 +173,11 @@ def get_all_pairs(dataset):
     """
     ids_list = dataset.data[dataset.id_col].tolist()
     splits_list = dataset.data[dataset.target].tolist()
-    confound_list = [None] * len(splits_list)
+    cnfd_list = [None] * len(splits_list)
     if dataset.confounder:
-        confound_list = dataset.data[dataset.confounder].tolist()
+        cnfd_list = dataset.data[dataset.confounder].tolist()
     samples = [(x, y, z) for x, y, z in
-               zip(ids_list, splits_list, confound_list)]
+               zip(ids_list, splits_list, cnfd_list)]
     samples = sorted(samples, key=lambda x: (x[1], x[2]))
     all_pairs_list = [x for x in combinations(samples, 2)]
     return all_pairs_list
