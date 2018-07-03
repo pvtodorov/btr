@@ -21,6 +21,14 @@ def check_or_create_dir(path):
         os.makedirs(path)
 
 
+def calc_content_md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(2 ** 20), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
 def get_settings_md5(settings):
     """Produces an md5 hash of the settings dict"""
     flat_settings = flatten_settings(settings)
