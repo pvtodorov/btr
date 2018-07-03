@@ -72,7 +72,7 @@ class ScoreLPOCV(Scorer):
             self.annotations['score_type'] = 'background'
         self.df = auc_df
 
-    def get_stats(self, gmt=None, dataset=None):
+    def get_stats(self, gmt, dataset):
         folder = get_outdir_path(self.settings) + 'score/'
         scored_predictions = pd.read_csv(folder + gmt.suffix + '_auc.csv')
         background = pd.read_csv(folder + 'background_auc.csv')
@@ -80,6 +80,7 @@ class ScoreLPOCV(Scorer):
         bcg_cols = [int(x) for x in bcg_cols]
         d_cols = dataset.data_cols
         scores = []
+        self.annotations['gmt'] = gmt.suffix
         for link, desc, g_list, m_list in gmt.generate(dataset_genes=d_cols):
             gene_list = g_list + m_list
             intersect = g_list
