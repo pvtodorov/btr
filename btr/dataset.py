@@ -57,7 +57,6 @@ class Dataset(object):
         if cols_only:
             nrows = 0
         df = pd.read_table(self.filepath, usecols=usecols, nrows=nrows)
-        df = df.dropna(axis=0, how='any')
         self.data = df
 
     def _get_data_cols(self):
@@ -80,6 +79,12 @@ class Dataset(object):
 
     def _apply_transform(self, transform):
         operation = transform.get("operation")
+        if operation == "dropna":
+            self.data = self.data.dropna(axis=0, how='any')
+        if operation == "drop_cols":
+            columns_list = transform["columns_list"]
+            self.data = self.data[[x for x in self.data.columns
+                                   if x not in columns_list]]
         if operation == "filter":
             column = transform["column"]
             values = transform["values"]
