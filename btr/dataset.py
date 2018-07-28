@@ -83,14 +83,14 @@ class Dataset(object):
             self.data = self.data.dropna(axis=0, how='any')
             self.meta_cols = [x for x in self.meta_cols
                               if x in self.data.columns.tolist()]
-            self.data_cols = self._get_data_cols()
+            self._get_data_cols()
         if operation == "drop_cols":
             columns_list = transform["columns_list"]
             self.data = self.data[[x for x in self.data.columns
                                    if x not in columns_list]]
             self.meta_cols = [x for x in self.meta_cols
                               if x in self.data.columns.tolist()]
-            self.data_cols = self._get_data_cols()
+            self._get_data_cols()
         if operation == "filter":
             column = transform["column"]
             values = transform["values"]
