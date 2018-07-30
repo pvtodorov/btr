@@ -1,6 +1,7 @@
 from mord import LogisticAT
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
 
 
 def get_estimator(settings):
@@ -15,5 +16,7 @@ def get_estimator(settings):
     elif name in ["Multiclass_Nonlinear",
                   "sklearn.ensemble.RandomForestClassifier"]:
         return RandomForestClassifier(**params)
+    elif name in ["xgboost.XGBClassifier"]:
+        return XGBClassifier(**params)
     else:
         raise NotImplementedError
