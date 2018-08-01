@@ -12,6 +12,8 @@ link to the importance of their constituent genes.
 
 ## Prerequisites
 
+If you are running on a Linux system which has multiple versions of `python` and `gcc` you should go ahead and make sure you have the correct ones by running `which <module name>`. To discover what version of these modules are available use `module avail <module name>` and then `module load <module name>` to load the correct one before proceeding. The `btr` package has been tested with with `python/3.6.0` and `gcc/6.2.0`.
+
 We get started by creating a Python 3 virtual environment.
 
     virtualenv nameyourenvhere
