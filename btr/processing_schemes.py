@@ -103,9 +103,11 @@ class LPOCV(Predictor):
                 except AttributeError as err:
                     me = "'LogisticAT' object has no attribute 'predict_proba'"
                     if me == err.args[0]:
-                        predictions = e.predict(X_test)
-                        predictions = np.array([[x, 1 - x]
-                                                for x in predictions])
+                        pred = np.array(e.predict(X_test))
+                        num_classes = len(set(y_train))
+                        num_samples = len(pred)
+                        predictions = np.zeros(((num_samples, num_classes)))
+                        predictions[np.arrange(num_samples), pred] = 1
                 for i_s, p in zip(pair_ids, predictions):
                     for c, p_c in enumerate(p):
                         self._bcg_predictions[pair_index][c][i_s][k] = p_c
