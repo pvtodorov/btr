@@ -1,50 +1,37 @@
 import pandas as pd
 import numpy as np
+import re
 
 
 class Dataset(object):
-    def __init__(self, settings):
-        try:
-            d_settings = settings['dataset']
-        except KeyError:
-            print('passed settings do not have "dataset" key')
-        self.name = d_settings['name']
-        self.filepath = d_settings['filepath']
-        self.meta_cols = d_settings['meta_columns']
-        self.target = d_settings['target']
-        self.id_col = d_settings['ID_column']
+    def __init__(self, settings, usecols=None, cols_only=False,
+                 transform_dataset=True):
+        self.settings = settings
+        self.name = self.settings['name']
+        self.filepath = self.settings['filepath']
+        self.meta_cols = self.settings['meta_columns']
+        self.target = self.settings['target']
+        self.id_col = self.settings['ID_column']
+        self.confounder = self.settings.get('confounder')
         self.data_cols = []
         self.data = pd.DataFrame()
-        self._load_data()
+        self._load_data(usecols=usecols)
         self._get_data_cols()
-        self.filter_dataset(settings)
+        if transform_dataset:
+            self.transform_dataset()
+        self.annotations = {}
 
-    def _get_data_cols(self):
-        """ Given a dataframe and its meta columns, get back a list of the data
-        columns from the dataframe.
-        """
-        df = self.data
-        cols = df.columns.tolist()
-        data_cols = [x for x in cols if x not in self.meta_cols]
-        self.data_cols = data_cols
-
-    def _load_data(self):
-        """ Load dataframe from supplied path. Drop any rows with NaNs.
-        """
-        df = pd.read_table(self.filepath)
-        df = df.dropna(axis=0, how='any')
-        self.data = df
-
-    def sample_data_cols(self, k):
+    def sample_data_cols(self, k, seed=None):
         """ Select a random sample of k-items from a list of columns.
         """
         data_cols = self.data_cols
-        sampled_cols = np.random.choice(data_cols, k)
+        prng = np.random.RandomState(seed)
+        sampled_cols = prng.choice(data_cols, k, replace=False)
         return [x for x in data_cols if x in sampled_cols]
 
     def get_X_y(self, test_ids, column=None, selected_cols=None):
         """ Given a dataframe, a target col, and a sample of data column names,
-        generate X, an numpy array of the data, and y, a list of target values
+        generate X, a numpy array of the data, and y, a list of target values
         corresponding to each row.
         """
         df = self.data
@@ -61,24 +48,67 @@ class Dataset(object):
         y_test = df_test[self.target].tolist()
         return X_train, y_train, X_test, y_test
 
-    def filter_dataset(self, settings):
-        """ A filter defined in settings['dataset']['filter']['filters'] can
-        be applied to the loaded dataset. An example filter:
-        "filter": {"name": "AB",
-                   "filters": [{"column": "Braak", "values": [0, 1, 2, 3, 4]}]
-                  }
-
-        The filter "name" is used in naming the folder that output files are 
-        deposited into. The "filters" list specifies a list of dicts, each
-        of which defines a "column" to limit and a list of values to limit the
-        column to.
+    def _load_data(self, usecols=None, cols_only=False):
+        """ Load dataframe from supplied path. Drop any rows with NaNs.
+        Setting `labels_only` to `True` will load only the target variable.
+        This is useful in cases where only that is needed, such as scoring.
         """
-        if settings['dataset'].get('filter'):
-            data = self.data
-            filters = settings['dataset']['filter']['filters']
-            for f in filters:
-                data = data[data[f['column']].isin(f['values'])]
-            self.data = data
+        nrows = None
+        if cols_only:
+            nrows = 0
+        df = pd.read_table(self.filepath, usecols=usecols, nrows=nrows)
+        self.data = df
+
+    def _get_data_cols(self):
+        """ Given a dataframe and its meta columns, get back a list of the data
+        columns from the dataframe.
+        """
+        df = self.data
+        cols = df.columns.tolist()
+        data_cols = [x for x in cols if x not in self.meta_cols]
+        self.data_cols = data_cols
+
+    def transform_dataset(self, transform=None):
+        if not transform:
+            transforms = self.settings.get('transforms')
+        else:
+            transforms = [transform]
+        if transforms:
+            for transform in transforms:
+                self._apply_transform(transform)
+
+    def _apply_transform(self, transform):
+        operation = transform.get("operation")
+        if operation == "dropna":
+            self.data = self.data.dropna(axis=0, how='any')
+            self.meta_cols = [x for x in self.meta_cols
+                              if x in self.data.columns.tolist()]
+            self._get_data_cols()
+        if operation == "drop_cols":
+            columns_list = transform["columns_list"]
+            self.data = self.data[[x for x in self.data.columns
+                                   if x not in columns_list]]
+            self.meta_cols = [x for x in self.meta_cols
+                              if x in self.data.columns.tolist()]
+            self._get_data_cols()
+        if operation == "filter":
+            column = transform["column"]
+            values = transform["values"]
+            self.data = self.data[self.data[column].isin(values)]
+        if operation == "digitize":
+            column = transform["column"]
+            thresholds = transform["thresholds"]
+            values = self.data[column].tolist()
+            values = list(np.digitize(values, thresholds) - 1)
+            self.data[column] = values
+        if operation == "str2float":
+            columns_list = transform["columns_list"]
+            for column in columns_list:
+                values = self.data[column].tolist()
+                non_decimal = re.compile(r'[^\d.]+')
+                converted_values = [non_decimal.sub('', x) for x in values]
+                self.data[column] = converted_values
+                self.data = self.data.astype({column: float})
 
 
 def get_train_test_df(df, test_ids, column):

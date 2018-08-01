@@ -12,6 +12,8 @@ link to the importance of their constituent genes.
 
 ## Prerequisites
 
+If you are running on a Linux system which has multiple versions of `python` and `gcc` you should go ahead and make sure you have the correct ones by running `which <module name>`. To discover what version of these modules are available use `module avail <module name>` and then `module load <module name>` to load the correct one before proceeding. The `btr` package has been tested with with `python/3.6.0` and `gcc/6.2.0`.
+
 We get started by creating a Python 3 virtual environment.
 
     virtualenv nameyourenvhere
@@ -38,13 +40,15 @@ You're ready to go!
 
 Installing the repo will also bind some commands that can be used in the terminal.
 In order to specify how to run the software, a settings file is needed. An example
-can be see in this repo's `example_settings.json`.
+can be see in this repo's `example_settings.json`. If a background is being generated,
+a file such as `example_background_params.json` must be provided. If a hypothesis is being
+used as the feature set, a `.gmt` file must be used such as this [this](http://www.pathwaycommons.org/archives/PC2/v10/PathwayCommons10.reactome.uniprot.gmt.gz) from Pathway Commons. 
 
 ### Making predictions
 
 To generate background predictions:
 
-    btr-predict <path to settings file>
+    btr-predict <path to settings file> -b <path to background parmeters>
 
 To generate geneset predictions:
 

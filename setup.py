@@ -10,12 +10,12 @@ setup(name='btr',
       packages=['btr'],
       zip_safe=False,
       entry_points={
-          'console_scripts': ['btr-predict=btr.predict:main',
-                              'btr-score=btr.score:score_main',
-                              'btr-stats=btr.score:stats_main']},
+          'console_scripts': ['btr-predict=btr.cli:predict',
+                              'btr-score=btr.cli:score',
+                              'btr-stats=btr.cli:stats']},
       install_requires=[
-          'mord', 'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
-          'scikit-learn', 'scipy', 'six', 'sklearn', 'statsmodels', 'tqdm',
-          'synapseclient', 'nose2'
+          'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
+          'scikit-learn', 'scipy', 'six', 'scikit-learn', 'statsmodels',
+          'tqdm', 'morph', 'xgboost', 'mord'
       ]
       )

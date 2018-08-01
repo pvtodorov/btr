@@ -1,155 +1,166 @@
-import json
-from .processing_schemes import LPOCV
-import synapseclient
-import synapseutils
-from synapseclient import File, Folder
-from .utilities import get_settings_annotations, get_settings_md5
 from pprint import pprint
+
+from .dataset import Dataset
+from .gmt import GMT
+from .processing_schemes import LPOCV
+from .scorer import ScoreLPOCV
+from .utilities import (flatten_settings, get_btr_version_info,
+                        get_outdir_path, get_settings_annotations, load_json,
+                        save_json, check_or_create_dir)
 
 
 class Loader(object):
-    def __init__(self, settings_path=None,
-                 use_synapse=True, syn_settings_overwrite=False):
-        self.s = None
+    def __init__(self,
+                 settings_path=None,
+                 gmt_path=None,
+                 pprint_settings=False):
+        self.settings = None
+        self.dataset = None
         self.proc = None
-        self._settings_path = settings_path
-        if self._settings_path:
-            with open(self._settings_path) as f:
-                self.s = json.load(f)
-        self._syn = None
-        if use_synapse:
-            self._syn = synapseclient.login()
-            self.save_settings_to_synapse(self._settings_path,
-                                          overwrite=syn_settings_overwrite)
-        pprint(self.s)
+        self.gmt = None
+        self.settings_path = settings_path
+        self.gmt_path = gmt_path
+        self.backgrounds_params = None
+        # if a settings_path is provided, automatically load settings
+        if self.settings_path:
+            self.load_settings(self.settings_path)
+        if pprint_settings:
+            pprint(self.settings)
 
-    def get_processor_from_settings(self):
-        settings = self.s
-        name = settings["processing_scheme"]["name"]
-        if name == 'LPOCV':
-            self.proc = LPOCV(settings=settings)
+    def load_settings(self, settings_path):
+        self.settings = load_json(settings_path)
+
+    def load_gmt(self, gmt_path):
+        if gmt_path:
+            self.gmt = GMT(gmt_path)
+            self.gmt_path = gmt_path
+
+    def load_background_params(self, background_params_path):
+        self.background_params = load_json(background_params_path)
+
+    def load_dataset(self, task):
+        ds = self.settings['dataset']
+        if task == 'predict':
+            self.dataset = Dataset(ds)
+        elif task == 'score':
+            self.dataset = Dataset(ds, usecols=ds['meta_columns'])
+        elif task == 'stats':
+            self.dataset = Dataset(ds, cols_only=True)
         else:
             raise NotImplementedError
 
-    def save_settings_to_synapse(self, settings_path, overwrite=False):
-        """Saves prediction to Synapse"""
-        if not self._syn:
-            print('Not logged into synapse.')
-            return
-        parent = get_or_create_syn_folder(self._syn,
-                                          'run_settings/',
-                                          self.s['project_synid'])
-        localfile = File(path=settings_path, parent=parent)
-        remotefile = get_or_create_syn_entity(localfile, self._syn,
-                                              skipget=False,
-                                              returnid=False)
-        md5 = get_settings_md5(self.s)
-        if [md5] == remotefile.annotations.get('settings_md5'):
-            print('Local settings file and remote have the same md5 hashes.')
-        else:
-            print('Local settings file and remote have DIFFERENT md5 hashes.')
-            if overwrite:
-                print('Overwriting remote.')
-                file = self._syn.store(localfile)
-                annotations = {'btr_file_type': 'settings',
-                               'settings_md5': md5}
-                file.annotations = annotations
-                file = get_or_create_syn_entity(file, self._syn,
-                                                skipget=overwrite)
-            else:
-                print('Overwrite disabled. Remote unchanged. Local unchanged.')
-                raise synapseclient.exceptions.SynapseError
-
-    def save_prediction_to_synapse(self):
-        """Saves prediction to Synapse"""
-        if not self._syn:
-            print('Not logged into synapse')
-            return
-        dirpath = self.proc._outdir_path
-        filename = self.proc._outfile_name
-        parent = get_or_create_syn_folder(self._syn,
-                                          dirpath,
-                                          self.s['project_synid'])
-        file = File(path=dirpath + filename, parent=parent)
-        annotations = get_settings_annotations(self.s)
-        annotations['btr_file_type'] = 'prediction'
-        if 'background_predictions' in dirpath:
-            annotations['prediction_type'] = 'background'
-        elif "hypothesis_predictions" in dirpath:
-            annotations['prediction_type'] = "hypothesis"
+    def load_processor(self, task):
+        if task == "predict":
+            self.load_predictor()
+        elif task == 'score':
+            self.load_scorer()
+        elif task == "stats":
+            self.load_scorer()
         else:
             raise NotImplementedError
-        gmt = self.proc.gmt
-        if gmt:
-            annotations['gmt'] = gmt.suffix
-        file.annotations = annotations
-        file = get_or_create_syn_entity(file, self._syn,
-                                        skipget=True,
-                                        returnid=False)
+
+    def load_predictor(self, load_data=True):
+        scheme = self.settings['processor']["scheme"]
+        if load_data:
+            self.load_dataset('predict')
+        if scheme == 'LPOCV':
+            self.proc = LPOCV(settings=self.settings['processor'],
+                              dataset=self.dataset)
+        else:
+            raise NotImplementedError
+
+    def load_scorer(self):
+        scheme = self.settings['processor']["scheme"]
+        if scheme == 'LPOCV':
+            self.proc = ScoreLPOCV(settings=self.settings)
+        else:
+            raise NotImplementedError
+
+    def load_statser(self):
+        scheme = self.settings['processor']["scheme"]
+        if scheme == 'LPOCV':
+            pass
+        else:
+            raise NotImplementedError
+
+    def get_annotations(self):
+        self.annotations = {}
+        self.annotations = get_settings_annotations(self.settings)
+        self.annotations.update(get_btr_version_info())
+        to_update = {'dataset.': self.dataset,
+                     'processor.': self.proc}
+        for prefix, obj in to_update.items():
+            flat_annotations = flatten_settings(obj.annotations, prefix)
+            self.annotations.update(flat_annotations)
+
+    def save(self, task):
+        if task == "predict":
+            self._save_predictions()
+        elif task == 'score':
+            self._save_score()
+        elif task == "stats":
+            self._save_stats()
+        else:
+            raise NotImplementedError
+
+    def _save_predictions(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        outdir_path = get_outdir_path(self.settings)
+        if self.proc.annotations['prediction_type'] == 'hypothesis':
+            outdir_path += 'hypothesis_predictions/'
+        else:
+            outdir_path += 'background_predictions/'
+        check_or_create_dir(outdir_path)
+        outfile_name = self.proc.annotations.get('gmt', str(self.proc.uuid))
+        predictions_path = outdir_path + outfile_name + '.csv'
+        self.proc.df_result.to_csv(predictions_path, index=False)
+        self.get_annotations()
+        save_annotations(self.annotations, predictions_path)
+
+    def _save_score(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        infolder = get_outdir_path(self.settings)
+        outfolder = "/".join(infolder.split('/')[:-1] + ['score', ''])
+        check_or_create_dir(outfolder)
+        file_name = self.proc.annotations.get('gmt', 'background')
+        score_path = outfolder + file_name + '_auc.csv'
+        self.proc.df.to_csv(score_path, index=False)
+        self.get_annotations()
+        save_annotations(self.annotations, score_path)
+
+    def _save_stats(self):
+        """Saves prediction results (csv) and annotations (json)
+
+        Random gene set predictions are placed in `background_predictions/`
+        Gene set predictions are place in `hypothesis_predictions/`
+        Each of these gets its own subfolder of `.annotations/`
+        """
+        infolder = get_outdir_path(self.settings)
+        outfolder = "/".join(infolder.split('/')[:-1] + ['stats', ''])
+        check_or_create_dir(outfolder)
+        file_name = self.proc.annotations.get('gmt', 'background')
+        score_path = outfolder + file_name + '_auc.csv'
+        print(score_path)
+        self.proc.df.to_csv(score_path, index=False)
+        self.get_annotations()
+        save_annotations(self.annotations, score_path)
 
 
-def get_synapse_dict(syn, project_synid):
-    walked = synapseutils.walk(syn, project_synid)
-    contents = [x for x in walked]
-    contents_dict = {}
-    project_name = contents[0][0][0]
-    contents_dict[''] = contents[0][0][1]
-    for c in contents:
-        base = c[0]
-        folders = c[1]
-        files = c[2]
-        for folder in folders:
-            folder_path = "/".join([base[0], folder[0], ''])
-            folder_path = folder_path.replace(project_name + '/', '')
-            syn_id = folder[1]
-            contents_dict[folder_path] = syn_id
-        for file in files:
-            file_path = "/".join([base[0], file[0]])
-            file_path = file_path.replace(project_name + '/', '')
-            syn_id = file[1]
-            contents_dict[file_path] = syn_id
-    return contents_dict
-
-
-def get_or_create_syn_folder(syn, dirpath, project_synid, max_attempts=10,
-                             create=True):
-    dirs = [x for x in dirpath.split('/') if len(x) > 0]
-    folder_synid = project_synid
-    for d in dirs:
-        folder = Folder(d, parent=folder_synid)
-        folder_synid = get_or_create_syn_entity(folder, syn)
-    return folder_synid
-
-
-def get_or_create_syn_entity(entity, syn, max_attempts=10,
-                             create=True, skipget=False, returnid=True):
-    attempts = 1
-    while attempts <= max_attempts:
-        try:
-            if skipget:
-                print('Writing without checking for entity.')
-                raise TypeError
-            else:
-                print('Attempting to get entity "' + entity.name + '".')
-                entity = syn.get(entity)
-                entity_synid = entity.id
-                print('Entity "' + entity.name + '" found.')
-                break
-        except TypeError:
-            try:
-                print('Attempting to create entity.')
-                if create:
-                    entity = syn.store(entity)
-                    entity_synid = entity.id
-                    break
-                else:
-                    print('Create set to False. Entity not created.')
-                    break
-            except synapseclient.exceptions.SynapseHTTPError:
-                print('SynapseHTTPError. Retrying. Attempt ' + attempts)
-                attempts += 1
-                continue
-    if returnid:
-        return entity_synid
-    else:
-        return entity
+def save_annotations(annotations_dict, filepath):
+    output_file = filepath.split('/')[-1]
+    output_dir = filepath[:-len(output_file)]
+    file_name = output_file[:-4]
+    annotations_dir = output_dir + '.annotations/'
+    annotations_filepath = annotations_dir + file_name + '.json'
+    check_or_create_dir(annotations_dir)
+    save_json(annotations_dict, annotations_filepath)

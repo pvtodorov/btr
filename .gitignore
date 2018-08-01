@@ -8,3 +8,5 @@ btr/__pycache__/
 btr/tests/__pycache__/
 
 btr/tests/Runs/
+
+\.vscode/

@@ -1,18 +1,22 @@
 from mord import LogisticAT
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
 
 
 def get_estimator(settings):
     """Returns an estmator as specified in the settings dict."""
-    est_settings = settings["estimator"]
-    name = est_settings["name"]
-    params = est_settings["estimator_params"]
-    if name == "Ordinal":
+    name = settings["name"]
+    params = settings["params"]
+    if name in ["Ordinal", "mord.LogisticAT"]:
         return LogisticAT(**params)
-    elif name == "Multiclass_Linear":
+    elif name in ["Multiclass_Linear",
+                  "sklearn.linear_model.LogisticRegression"]:
         return LogisticRegression(**params)
-    elif name == "Multiclass_Nonlinear":
+    elif name in ["Multiclass_Nonlinear",
+                  "sklearn.ensemble.RandomForestClassifier"]:
         return RandomForestClassifier(**params)
+    elif name in ["xgboost.XGBClassifier"]:
+        return XGBClassifier(**params)
     else:
         raise NotImplementedError
