@@ -38,13 +38,15 @@ You're ready to go!
 
 Installing the repo will also bind some commands that can be used in the terminal.
 In order to specify how to run the software, a settings file is needed. An example
-can be see in this repo's `example_settings.json`.
+can be see in this repo's `example_settings.json`. If a background is being generated,
+a file such as `example_background_params.json` must be provided. If a hypothesis is being
+used as the feature set, a `.gmt` file must be used such as this [this](http://www.pathwaycommons.org/archives/PC2/v10/PathwayCommons10.reactome.uniprot.gmt.gz) from Pathway Commons. 
 
 ### Making predictions
 
 To generate background predictions:
 
-    btr-predict <path to settings file>
+    btr-predict <path to settings file> -b <path to background parmeters>
 
 To generate geneset predictions:
 
