@@ -1,5 +1,6 @@
 import argparse
 from .loader import Loader
+from .utilities import load_json, get_settings_md5
 
 
 def predict():
@@ -64,3 +65,14 @@ def stats():
     print(loader.gmt.suffix)
     loader.proc.get_stats(gmt=loader.gmt, dataset=loader.dataset)
     loader.save(task)
+
+
+def print_settings_md5():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("settings_path", help="settings as JSON")
+    args = parser.parse_args()
+    settings_path = args.settings_path
+    settings = load_json(settings_path)
+    md5 = get_settings_md5(settings)
+    print(md5)
+    

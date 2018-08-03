@@ -12,7 +12,8 @@ setup(name='btr',
       entry_points={
           'console_scripts': ['btr-predict=btr.cli:predict',
                               'btr-score=btr.cli:score',
-                              'btr-stats=btr.cli:stats']},
+                              'btr-stats=btr.cli:stats',
+                              'btr-md5=btr.cli:print_settings_md5']},
       install_requires=[
           'numpy', 'pandas', 'patsy', 'python-dateutil', 'pytz',
           'scikit-learn', 'scipy', 'six', 'scikit-learn', 'statsmodels',
