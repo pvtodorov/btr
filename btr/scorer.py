@@ -95,7 +95,7 @@ class ScoreLPOCV(Scorer):
             b_idx = (np.abs(np.array(bcg_cols) - len(intersect))).argmin()
             b_col = str(bcg_cols[b_idx])
             bcg_vals = background[b_col].tolist()
-            bcg_vals_t = [x for x in bcg_vals if x > s['AUC']]
+            bcg_vals_t = [x for x in bcg_vals if x >= s['AUC']]
             s['p_value'] = len(bcg_vals_t) / len(bcg_vals)
             scores.append(s)
 
