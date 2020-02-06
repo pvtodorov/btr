@@ -42,9 +42,9 @@ class Dataset(object):
             selected_cols = self.data_cols
         df_train, df_test = get_train_test_df(df, test_ids, column)
         df_train[self.id_col].cat.set_categories(test_ids, inplace=True)
-        X_train = df_train.as_matrix(columns=selected_cols)
+        X_train = df_train[selected_cols].to_numpy()
         y_train = df_train[self.target].tolist()
-        X_test = df_test.as_matrix(columns=selected_cols)
+        X_test = df_test[selected_cols].to_numpy()
         y_test = df_test[self.target].tolist()
         return X_train, y_train, X_test, y_test
 
