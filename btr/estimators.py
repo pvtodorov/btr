@@ -25,8 +25,8 @@ def get_estimator(settings):
         raise NotImplementedError
 
 class RidgeClassifierBTR(RidgeClassifier):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        RidgeClassifier.__init__(self, *args, **kwargs)
     def predict_proba(self, X_test):
         """Returns the distance from the hyperplane of the RidgeClassifer.
         Not a probability, per se, but values are still rankable for LPOCV.
