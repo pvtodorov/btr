@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
+from sklearn.preprocessing import StandardScaler
 
 
 class Dataset(object):
@@ -109,6 +110,10 @@ class Dataset(object):
                 converted_values = [non_decimal.sub('', x) for x in values]
                 self.data[column] = converted_values
                 self.data = self.data.astype({column: float})
+        if operation == "standardize":
+            stsc = StandardScaler()
+            transformed_data = stsc.fit_transform(self.data[self.data_cols])
+            self.data[self.data_cols] = transformed_data
 
 
 def get_train_test_df(df, test_ids, column):
