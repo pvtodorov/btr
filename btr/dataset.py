@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 from sklearn.preprocessing import StandardScaler
+import warnings
 
 
 class Dataset(object):
@@ -111,9 +112,13 @@ class Dataset(object):
                 self.data[column] = converted_values
                 self.data = self.data.astype({column: float})
         if operation == "standardize":
-            stsc = StandardScaler()
-            transformed_data = stsc.fit_transform(self.data[self.data_cols])
-            self.data[self.data_cols] = transformed_data
+            if self.data[self.data_cols].shape[1]>0:
+                stsc = StandardScaler()
+                transformed_data = stsc.fit_transform(self.data[self.data_cols])
+                self.data[self.data_cols] = transformed_data
+            else:
+                warnings.warn("No data columns available to standardize.",
+                              Warning, stacklevel=2)
 
 
 def get_train_test_df(df, test_ids, column):
